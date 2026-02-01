@@ -1,1 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Logic Pro + Solutions</title>
+    <style>
+        :root { --pink: #ff85a2; --dark-pink: #e91e63; --bg: #fff0f3; }
+        body { font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; padding: 15px; background: var(--bg); color: #333; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 5px solid var(--pink); }
+        textarea { width: 100%; height: 120px; border-radius: 15px; border: 1px solid #ddd; padding: 15px; box-sizing: border-box; font-size: 15px; outline: none; resize: none; }
+        button { background: var(--pink); color: white; border: none; padding: 15px; border-radius: 30px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; transition: 0.3s; }
+        button:hover { background: var(--dark-pink); }
+        .clear-btn { background: #f0f0f0; color: #777; font-size: 12px; padding: 8px; margin-top: 10px; border-radius: 10px; width: 100%; border: none; cursor: pointer; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px; text-align: center; }
+        .stat-box { background: var(--bg); padding: 10px; border-radius: 12px; border: 1px solid #ffd1dc; }
+        .stat-val { display: block; font-size: 18px; font-weight: bold; color: var(--dark-pink); }
+        .stat-lbl { font-size: 10px; text-transform: uppercase; color: #888; }
+        .solution-box { background: #fdf2f2; border-left: 4px solid #f44336; padding: 15px; margin-top: 15px; border-radius: 8px; font-size: 14px; }
+        .pos { color: #4caf50; font-weight: bold; }
+        .neg { color: #f44336; font-weight: bold; }
+        .history-item { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .profanity-alert { background: #000; color: #fff; font-size: 10px; padding: 2px 5px; border-radius: 4px; vertical-align: middle; }
+    </style>
+</head>
+<body>
 
+    <h2 style="text-align:center; color: var(--dark-pink);">🌸 Beauty Logic Pro</h2>
+    
+    <div class="card">
+        <textarea id="input" placeholder="Paste long review here... (e.g. Ang ganda sana pero p*tangina basag yung item!)"></textarea>
+        <button onclick="analyze()">Deep Analyze Review</button>
+        <button class="clear-btn" onclick="clearHistory()">🗑️ Wipe All Data</button>
+    </div>
+
+    <div id="result" class="card" style="display:none;"></div>
+
+    <div class="card">
+        <h3>📊 Data Statistics</h3>
+        <div class="stats-grid">
+            <div class="stat-box"><span class="stat-val" id="stat-total">0</span><span class="stat-lbl">Analyzed</span></div>
+            <div class="stat-box"><span class="stat-val" id="stat-neg">0</span><span class="stat-lbl">Issues</span></div>
+            <div class="stat-box"><span class="stat-val" id="stat-rate">0%</span><span class="stat-lbl">Satisfaction</span></div>
+        </div>
+        <hr style="border:0; border-top: 1px solid #eee; margin: 20px 0;">
+        <div id="historyList"></div>
+    </div>
+
+<script>
+    let history = JSON.parse(localStorage.getItem('beauty_pro_data')) || [];
+
+    function analyze() {
+        const text = document.getElementById('input').value.trim();
+        if(!text) return;
+
+        let score = 0;
+        let issues = [];
+        let profanityDetected = false;
+
+        // 1. PROFANITY FILTER (Filipino/English)
+        if(/p*tangina|gago|puta|pakshet|bwisit|shit|fuck|badtrip|ulol/i.test(text)) {
+            score -= 5;
+            profanityDetected = true;
+        }
+
+        // 2. SCORING LOGIC
+        // Positive keywords (+1)
+        if(/ganda|effective|orig|authentic|smooth|mabango|fast|nice/i.test(text)) score += 1;
+        // Negative keywords (-2 per hit to outweigh "good" words)
+        if(/fake|peke|scam|basag|damaged|leak|tapon|yupi|kulang/i.test(text)) { score -= 2; issues.push("Quality/Damage"); }
+        if(/hapdi|kati|pimple|breakout|iritasyon|pula|burn/i.test(text)) { score -= 2; issues.push("Skin Reaction"); }
+        if(/tagal|late|delay|snob|attitude/i.test(text)) { score -= 2; issues.push("Service/Shipping"); }
+
+        let sentiment = (score < 0) ? "NEGATIVE" : "POSITIVE";
+        
+        // 3. SOLUTION LOGIC
+        let solution = "";
+        if(issues.includes("Quality/Damage")) solution = "🛠️ **Action:** Issue a partial refund and report courier for mishandling.";
+        else if(issues.includes("Skin Reaction")) solution = "⚠️ **Action:** Advise customer to stop use immediately. Check batch expiration.";
+        else if(issues.includes("Authenticity")) solution = "🛡️ **Action:** Send a photo of the BIR/Brand Certificate to the customer.";
+        else if(sentiment === "POSITIVE") solution = "✅ **Action:** Send a 'Thank You' voucher to encourage repeat buy.";
+        else solution = "💬 **Action:** Reply with a standard apology and ask for more details.";
+
+        const entry = {
+            time: new Date().toLocaleDateString(),
+            text: text,
+            sentiment: sentiment,
+            score: score,
+            issues: issues.length ? issues : ["None"],
+            solution: solution,
+            profane: profanityDetected
+        };
+
+        history.push(entry);
+        localStorage.setItem('beauty_pro_data', JSON.stringify(history));
+        render();
+        document.getElementById('input').value = "";
+    }
+
+    function render() {
+        if(history.length === 0) return;
+        
+        const last = history[history.length-1];
+        const resDiv = document.getElementById('result');
+        resDiv.style.display = "block";
+        
+        resDiv.innerHTML = `
+            <h4>Analysis: <span class="${last.sentiment.toLowerCase()}">${last.sentiment}</span> 
+            ${last.profane ? '<span class="profanity-alert">Profanity Detected</span>' : ''}</h4>
+            <p style="font-size:14px; color:#666;">Score: ${last.score} | Flags: ${last.issues.join(", ")}</p>
+            <div class="solution-box">${last.solution}</div>
+        `;
+
+        // Update Statistics
+        const total = history.length;
+        const negs = history.filter(h => h.sentiment === "NEGATIVE").length;
+        const rate = Math.round(((total - negs) / total) * 100);
+
+        document.getElementById('stat-total').innerText = total;
+        document.getElementById('stat-neg').innerText = negs;
+        document.getElementById('stat-rate').innerText = rate + "%";
+
+        // Update History
+        document.getElementById('historyList').innerHTML = history.slice().reverse().map(h => `
+            <div class="history-item">
+                <b>${h.time} - ${h.sentiment}</b><br>
+                <span style="color:#777">${h.text.substring(0,60)}...</span>
+            </div>
+        `).join('');
+    }
+
+    function clearHistory() {
+        if(confirm("Delete all data and statistics?")) {
+            localStorage.removeItem('beauty_pro_data');
+            history = [];
+            location.reload();
+        }
+    }
+    render();
+</script>
+</body>
+</html>
