@@ -1,1 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Products Professional AI NLP</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { --main: #d63384; --dark: #1a1d20; --bg: #f8f9fa; --white: #ffffff; --critical: #ff7675; --warning: #fab1a0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; color: #333; }
+        .navbar { background: var(--dark); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .container { max-width: 1250px; margin: 20px auto; padding: 0 15px; }
+        .dashboard-grid { display: grid; grid-template-columns: 420px 1fr; gap: 25px; }
+        @media (max-width: 950px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        
+        .card { background: var(--white); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 4px solid transparent; }
+        .card-input { border-top-color: var(--main); }
+        textarea { width: 100%; height: 220px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; font-size: 14px; resize: none; box-sizing: border-box; outline-color: var(--main); line-height: 1.6; background: #fff; }
+        
+        .btn { padding: 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 10px; }
+        .btn-main { background: var(--main); color: white; font-size: 16px; box-shadow: 0 4px 15px rgba(214, 51, 132, 0.3); }
+        .btn-excel { background: #1f7244; color: white; width: auto; padding: 10px 20px; font-size: 13px; }
+        .btn-copy { background: #2d3436; color: white; width: auto; padding: 6px 15px; font-size: 11px; margin-top: 8px; float: right; border-radius: 5px; }
+        
+        .search-box { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; padding-left: 40px; background: #fff url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="gray"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>') no-repeat 12px center; }
+        
+        .item { border-bottom: 1px solid #eee; padding: 25px 0; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-right: 5px; }
+        .tag-skin { background: #ffeaa7; color: #d35400; }
+        .tag-rider { background: #fab1a0; color: #e17055; }
+        .tag-quality { background: #a29bfe; color: #4834d4; }
+        .tag-neg { background: var(--critical); color: white; }
+        .tag-pos { background: #55efc4; color: #006266; }
+        
+        .response-card { background: #fff5f8; border-left: 5px solid var(--main); padding: 18px; margin-top: 15px; font-size: 14px; border-radius: 4px; line-height: 1.6; clear: both; color: #2d3436; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
+        .strategy-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-top: 12px; font-size: 13px; color: #2d3436; position: relative; }
+        .strategy-header { color: #d63384; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+        .action-step { display: block; margin-top: 5px; padding-left: 15px; position: relative; color: #4b4b4b; }
+        .action-step::before { content: "•"; position: absolute; left: 0; color: var(--main); }
+    </style>
+</head>
+<body>
 
+    <nav class="navbar">
+        <div style="font-weight: 800; letter-spacing: 1px; font-size: 20px;">🌸 BEAUTY PRO AI NLP</div>
+        <button class="btn btn-excel" onclick="exportToExcel()">📥 Export Tactical Report (.xlsx)</button>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <div>
+                <div class="card card-input">
+                    <h3 style="margin-top:0">Intelligent NLP Intake</h3>
+                    <p style="font-size: 12px; color: #666;">Paste long Taglish/Jeje reviews. AI will auto-detect complex host strategies.</p>
+                    <textarea id="reviewInput" placeholder="Enter review here..."></textarea>
+                    <button class="btn btn-main" onclick="analyzeDeep()">Execute Deep Analysis</button>
+                    <button onclick="clearHistory()" style="background:none; border:none; color:#bbb; font-size:11px; margin-top:15px; cursor:pointer; width:100%;">Wipe Local Database</button>
+                </div>
+                <div class="card">
+                    <h3 style="margin-top:0">Batch Sentiment Trends</h3>
+                    <canvas id="chartArea"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0">Actionable History</h3>
+                    <input type="text" id="search" class="search-box" style="width:250px; margin:0;" placeholder="Search keyword or tag..." onkeyup="render()">
+                </div>
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('beauty_pro_tactical_v1')) || [];
+
+    const jejeMap = { "22o":"totoo", "q":"ko", "aq":"ako", "muka":"mukha", "wla":"wala", "d":"hindi", "u":"ikaw", "uminit":"mainit", "hapdi":"mahapdi", "epek":"effect", "bwas":"bawas" };
+
+    function analyzeDeep() {
+        const rawText = document.getElementById('reviewInput').value.trim();
+        if(!rawText) return;
+
+        let cleanText = rawText.toLowerCase();
+        Object.keys(jejeMap).forEach(key => {
+            cleanText = cleanText.replace(new RegExp(`\\b${key}\\b`, 'g'), jejeMap[key]);
+        });
+
+        const sentences = cleanText.split(/[.!?\n]+/).filter(s => s.trim().length > 0);
+        let issues = new Set();
+        let riskScore = 0;
+
+        // Detection Logic
+        sentences.forEach(s => {
+            if (/(tigyawat|bumps|butlig|hapdi|kirot|init|kati|mula|sunog|pimple|breakout|rash|nasira)/i.test(s)) { issues.add("Skin Reaction"); riskScore += 3; }
+            if (/(rider|delivery|kuya|attitude|bastos|mura|ugali|suplado|snob|matagal|pinansin)/i.test(s)) { issues.add("Rider Behavior"); riskScore += 2; }
+            if (/(fake|peke|scam|legit|orig|basag|tapon|alcohol|authentic|budol|bawas|sealed)/i.test(s)) { issues.add("Product Quality"); riskScore += 2; }
+        });
+
+        const negTriggers = /(sayang|mahal|hindi|pangit|bad|worst|disappointed|nagsisisi|ibabalik|takot)/i;
+        const posTriggers = /(hiyang|kinis|glow|puti|smooth|effective|maganda|mabait|salamat|satisfied|trusted)/i;
+
+        let sentiment = "Neutral";
+        if (riskScore >= 3 || negTriggers.test(cleanText)) sentiment = "Negative";
+        else if (posTriggers.test(cleanText)) sentiment = "Positive";
+
+        // Advanced Tactical Advice Generation
+        let response = "";
+        let strategySteps = [];
+        let issuesArr = Array.from(issues);
+
+        if (issuesArr.includes("Skin Reaction")) {
+            response = "Thank you for bringing this to our attention immediately. Your safety is our absolute priority. Please discontinue use of the product right away. Maaari po kayong mag-apply ng cold compress at uminom ng maraming tubig. We will contact you via DM to monitor your skin's condition.";
+            strategySteps.push("URGENT: Request photos of the reaction for documentation.");
+            strategySteps.push("Advise customer to stop all actives (Vitamin C, Retinol) temporarily.");
+            strategySteps.push("Internal: Audit batch production log for pH level spikes.");
+        }
+
+        if (issuesArr.includes("Rider Behavior")) {
+            if (response === "") response = "Pasensya na po sa naging karanasan ninyo kay Rider. Hindi po namin kinukunsinti ang ganyang behavior. I-re-report po namin ito sa aming courier partner branch para mabigyan ng kaukulang aksyon.";
+            strategySteps.push("LOGISTICS: Cross-check Order ID with Courier Waybill.");
+            strategySteps.push("File a 'Staff Misconduct' report via the courier's seller portal.");
+        }
+
+        if (issuesArr.includes("Product Quality")) {
+            if (response === "") response = "Pasensya na po kung may concern kayo sa packaging/quality ng item. Sisiguraduhin po naming maayos ang aming quality control.";
+            strategySteps.push("QC: Check warehouse CCTV for the packing process of this Order ID.");
+            strategySteps.push("Verify if the 'Alcohol Smell' reported is within standard specs for this batch.");
+        }
+
+        if (sentiment === "Positive") {
+            response = "Thank you for your trust on our brand, we hope we are able to satisfy you till the end! ✨ We are so happy na naging hiyang kayo. Stay glowing!";
+            strategySteps.push("RETAIN: Invite customer to the VIP/Loyalty Telegram/FB Group.");
+        }
+
+        if (strategySteps.length === 0) {
+            response = "Maraming salamat po sa feedback. Gagamitin po namin ito upang mapaganda ang aming serbisyo.";
+            strategySteps.push("General: No critical action needed. Archiving feedback.");
+        }
+
+        db.push({ id: Date.now(), original: rawText, sentiment, issues: issuesArr, response, strategy: strategySteps, date: new Date().toLocaleString() });
+        localStorage.setItem('beauty_pro_tactical_v1', JSON.stringify(db));
+        document.getElementById('reviewInput').value = "";
+        updateDashboard();
+    }
+
+    function render() {
+        const search = document.getElementById('search').value.toLowerCase();
+        const list = document.getElementById('historyList');
+        const filtered = db.filter(i => i.original.toLowerCase().includes(search) || i.issues.join().toLowerCase().includes(search));
+        
+        list.innerHTML = filtered.length ? filtered.reverse().map(i => `
+            <div class="item">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <span class="badge ${i.sentiment === 'Positive' ? 'tag-pos' : 'tag-neg'}">${i.sentiment}</span>
+                        ${i.issues.map(tag => `<span class="badge ${tag === 'Skin Reaction' ? 'tag-skin' : tag === 'Rider Behavior' ? 'tag-rider' : 'tag-quality'}">${tag}</span>`).join('')}
+                    </div>
+                    <small style="color:#999;">${i.date}</small>
+                </div>
+                <p style="margin:15px 0; font-size:14px; line-height:1.6; color:#2d3436; padding:12px; background:#fcfcfc; border-radius:8px; border:1px solid #f1f1f1;">"${i.original}"</p>
+                
+                <button class="btn-copy" onclick="copyResponse('${i.id}')">📋 Copy Professional Response</button>
+                
+                <div class="response-card" id="resp-${i.id}">
+                    <span style="display:block; margin-bottom:5px; font-weight:bold; font-size:11px; color:#d63384;">✨ SUGGESTED RESPONSE</span>
+                    ${i.response}
+                </div>
+
+                <div class="strategy-box">
+                    <span class="strategy-header">🎯 HOST ACTION STRATEGY (Managerial Only)</span>
+                    ${i.strategy.map(s => `<span class="action-step">${s}</span>`).join('')}
+                </div>
+            </div>
+        `).join('') : '<p style="text-align:center; color:#999; margin-top:50px;">No complex complaints found in history.</p>';
+    }
+
+    function copyResponse(id) {
+        const item = db.find(x => x.id == id);
+        if (item) {
+            navigator.clipboard.writeText(item.response).then(() => {
+                const btn = event.target;
+                btn.innerText = "✅ Response Copied!";
+                btn.style.backgroundColor = "#2ecc71";
+                setTimeout(() => { btn.innerText = "📋 Copy Professional Response"; btn.style.backgroundColor = "#2d3436"; }, 2000);
+            });
+        }
+    }
+
+    function updateDashboard() {
+        render();
+        const pos = db.filter(i => i.sentiment === "Positive").length;
+        const neg = db.filter(i => i.sentiment === "Negative").length;
+        const neu = db.length - (pos + neg);
+        updateChart(pos, neg, neu);
+    }
+
+    function exportToExcel() {
+        if(!db.length) return alert("Nothing to export.");
+        const exportData = db.map(i => ({
+            Date: i.date,
+            Review: i.original,
+            Sentiment: i.sentiment,
+            Issues: i.issues.join(", "),
+            Response: i.response,
+            Strategy: i.strategy.join(" | ")
+        }));
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "TacticalReport");
+        XLSX.writeFile(wb, "Beauty_Tactical_Report.xlsx");
+    }
+
+    let myChart;
+    function updateChart(p, n, u) {
+        const ctx = document.getElementById('chartArea').getContext('2d');
+        if(myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: ['Happy', 'Critical', 'Needs Monitoring'], datasets: [{ data:[p, n, u], backgroundColor: ['#2ecc71', '#ff7675', '#dfe6e9'], borderWidth: 0 }] },
+            options: { cutout: '75%', plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } }
+        });
+    }
+
+    function clearHistory() {
+        if(confirm("DANGER: This wipes all tactical data. Proceed?")) {
+            localStorage.removeItem('beauty_pro_tactical_v1');
+            db = [];
+            location.reload();
+        }
+    }
+    updateDashboard();
+</script>
+</body>
+</html>
