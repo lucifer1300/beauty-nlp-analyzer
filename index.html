@@ -1,1 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D.Z. Mariposa NLP - Ultimate v20 Heatmap Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --mariposa-pink: #ff85a2; --mariposa-hot: #d63384;
+            --mariposa-black: #121212; --mariposa-dark-grey: #1e1e1e;
+            --white: #ffffff; --critical: #ff4757; --pos: #2ed573; 
+            --voucher-blue: #3b82f6; --expired: #555;
+        }
+        
+        body { font-family: 'Inter', sans-serif; background: var(--mariposa-black); margin: 0; color: var(--white); overflow-x: hidden; }
+        .container { width: 95%; max-width: 1400px; margin: 10px auto; padding: 10px; box-sizing: border-box; }
+        
+        .navbar { 
+            background: linear-gradient(90deg, #000 0%, var(--mariposa-dark-grey) 100%); 
+            padding: 15px 25px; border-bottom: 2px solid var(--mariposa-hot);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1024px) { .dashboard-grid { grid-template-columns: 420px 1fr; } }
+
+        .card { background: var(--mariposa-dark-grey); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,133,162,0.1); position: relative; margin-bottom: 20px; }
+        
+        /* Heatmap Styling */
+        .heatmap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
+        .heatmap-cell { height: 40px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; background: #111; border: 1px solid #222; }
+        .h-label { font-size: 8px; color: #666; margin-top: 2px; text-transform: uppercase; }
+
+        .exposure-card { background: linear-gradient(135deg, #1e1e1e 0%, #000 100%); border: 1px solid var(--voucher-blue); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .stat-box { background: #111; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #222; }
+        .stat-val { font-size: 20px; font-weight: 900; color: var(--voucher-blue); display: block; }
+        .stat-lbl { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+
+        textarea { width: 100%; height: 100px; border: 1px solid #333; border-radius: 8px; padding: 12px; background: #000; color: #fff; font-size: 14px; box-sizing: border-box; resize: vertical; }
+        
+        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-main { background: var(--mariposa-hot); color: white; }
+        .btn-export { background: var(--pos); color: #000; width: auto; font-size: 12px; }
+        .btn-voucher { background: var(--voucher-blue); color: white; font-size: 11px; }
+        .btn-wipe { background: transparent; color: #ff4757; border: 1px solid #441111; font-size: 10px; }
+
+        .delete-item-btn { position: absolute; top: 15px; right: 15px; background: transparent; color: #ff4757; border: 1px solid #441111; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; opacity: 0.6; }
+
+        .tactical-hub { background: #0b0b0b; border: 1px solid var(--mariposa-pink); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .hub-label { font-size: 10px; color: var(--mariposa-pink); font-weight: 900; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .response-box { color: #ddd; font-size: 13px; line-height: 1.6; border-bottom: 1px solid #222; padding-bottom: 12px; margin-bottom: 12px; white-space: pre-line; }
+        .manager-box { background: rgba(214, 51, 132, 0.08); border-left: 3px solid var(--mariposa-pink); padding: 12px; font-size: 12px; color: #ffc2d1; }
+        
+        .voucher-log-table { width: 100%; font-size: 10px; border-collapse: collapse; margin-top: 10px; }
+        .voucher-log-table th { text-align: left; color: var(--voucher-blue); border-bottom: 1px solid #333; padding: 8px; }
+        .voucher-log-table td { padding: 8px; border-bottom: 1px solid #222; }
+        .expired-row { text-decoration: line-through; opacity: 0.4; }
+
+        #sentimentEmoji { font-size: 45px; margin-right: 15px; }
+        .chart-container { height: 160px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div style="font-family:'Playfair Display'; font-weight:900; color:var(--mariposa-pink); font-size: 1.2rem;">🌺 MARIPOSA v20 HEATMAP</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <div id="liveClock" style="font-size: 11px; color: var(--pos); font-family: monospace; background:#000; padding:5px 10px; border-radius:5px;"></div>
+            <button class="btn btn-export" onclick="exportData()">📥 EXPORT REPORT</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <div class="sidebar">
+                <div class="card">
+                    <h4 style="margin:0; color:var(--mariposa-pink); font-size:12px; letter-spacing:1px;">🕒 SENTIMENT HEATMAP (DAILY)</h4>
+                    <div class="heatmap-grid" id="heatmapGrid">
+                        <div class="heatmap-cell" id="h-night">0<span class="h-label">Night</span></div>
+                        <div class="heatmap-cell" id="h-morning">0<span class="h-label">Morn</span></div>
+                        <div class="heatmap-cell" id="h-afternoon">0<span class="h-label">Aft</span></div>
+                        <div class="heatmap-cell" id="h-evening">0<span class="h-label">Eve</span></div>
+                    </div>
+                </div>
+
+                <div class="card exposure-card">
+                    <h4 style="margin:0; color:var(--voucher-blue); font-size:12px; letter-spacing:1px;">📊 RECOVERY EXPOSURE</h4>
+                    <div class="stat-grid">
+                        <div class="stat-box"><span class="stat-val" id="totalVouchers">0</span><span class="stat-lbl">Active</span></div>
+                        <div class="stat-box"><span class="stat-val" id="estExposure">₱0</span><span class="stat-lbl">Liability</span></div>
+                    </div>
+                    <table class="voucher-log-table">
+                        <thead><tr><th>CODE</th><th>EXPIRY</th><th>STATUS</th></tr></thead>
+                        <tbody id="voucherLogBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div style="display:flex; align-items:center; margin-bottom:15px;">
+                        <span id="sentimentEmoji">😐</span>
+                        <h3 style="margin:0; color:var(--mariposa-pink); font-size: 15px;">Review Intake</h3>
+                    </div>
+                    <textarea id="reviewInput" placeholder="Paste reviews here..."></textarea>
+                    <button class="btn btn-main" onclick="processAnalysis()">⚡ ANALYZE SENTIMENT</button>
+                    <button class="btn btn-wipe" onclick="clearAll()">🗑️ RESET ALL</button>
+                </div>
+
+                <div class="card">
+                    <h4 style="margin:0; color:var(--mariposa-pink); font-size:12px; letter-spacing:1px;">📈 SCORE TREND</h4>
+                    <div class="chart-container"><canvas id="lineChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('mariposa_v20_db')) || [];
+    let voucherLog = JSON.parse(localStorage.getItem('mariposa_v20_vouchers')) || [];
+    let lineChart;
+
+    setInterval(() => {
+        document.getElementById('liveClock').innerText = new Date().toLocaleString();
+        updateTimers();
+    }, 1000);
+
+    function processAnalysis() {
+        const text = document.getElementById('reviewInput').value.trim();
+        if(!text) return;
+
+        const now = new Date();
+        const hour = now.getHours();
+        let timeSlot = "";
+        if(hour >= 0 && hour < 6) timeSlot = "Night";
+        else if(hour >= 6 && hour < 12) timeSlot = "Morning";
+        else if(hour >= 12 && hour < 18) timeSlot = "Afternoon";
+        else timeSlot = "Evening";
+
+        const words = text.toLowerCase().split(/\W+/);
+        const posWords = ['ganda','glow','hiyang','effective','legit','mabait','sulit','fast','secure','dasurb','slay'];
+        const negWords = ['hapdi','kirot','fake','scam','late','bastos','suplado','sunog','dry','irritation','rashes','pimple'];
+
+        let posCount = words.filter(w => posWords.includes(w)).length;
+        if(text.toLowerCase().includes("ganda")) posCount += 2;
+        let negCount = words.filter(w => negWords.includes(w)).length;
+
+        let score = (posCount - negCount) / (words.length / 5 + 1);
+        score = Math.max(-1, Math.min(1, score));
+        let sentiment = score > 0.1 ? "Positive" : (score < -0.1 ? "Negative" : "Neutral");
+        
+        let isClinical = /hapdi|kirot|butlig|rash|dry|sunog|irritation|nasunog/i.test(text);
+        let isLogistics = /rider|tagal|deliver|shipping|charges|bastos|suplado/i.test(text);
+
+        let managerAction = "Standard Monitoring.";
+        if(isClinical) managerAction = "CLINICAL RISK: Request photos. Check Retinol usage.";
+        else if(isLogistics) managerAction = "LOGISTICS: File dispute with Courier hub.";
+
+        let tacticalReply = "Pasensya na po. PM us your Order ID.";
+        if(sentiment === "Positive") tacticalReply = "Salamat sa tiwala! Stay glowing! ✨";
+        else if(isClinical) tacticalReply = "STOP USE agad. Hugasan ng malamig na tubig. DM us for refund assistance.";
+
+        db.push({
+            id: Date.now(),
+            text: text,
+            sentiment: sentiment,
+            score: score,
+            isClinical: isClinical,
+            tacticalReply: tacticalReply,
+            managerAction: managerAction,
+            timeSlot: timeSlot,
+            timestamp: new Date().toLocaleString()
+        });
+
+        saveData();
+        document.getElementById('reviewInput').value = "";
+    }
+
+    function issueVoucher(id, isClinical) {
+        const code = (isClinical ? "CARE-" : "SORRY-") + Math.floor(1000 + Math.random() * 9000);
+        voucherLog.push({ 
+            code, value: isClinical ? 100 : 50, 
+            expiresAt: Date.now() + (24 * 60 * 60 * 1000), status: 'Active' 
+        });
+        localStorage.setItem('mariposa_v20_vouchers', JSON.stringify(voucherLog));
+        updateFinanceUI();
+        navigator.clipboard.writeText(code);
+        alert(`Voucher [${code}] copied!`);
+    }
+
+    function updateTimers() {
+        const now = Date.now();
+        voucherLog.forEach(v => { if (v.status === 'Active' && now > v.expiresAt) v.status = 'Expired'; });
+        refreshVoucherTable();
+    }
+
+    function refreshVoucherTable() {
+        const now = Date.now();
+        document.getElementById('voucherLogBody').innerHTML = voucherLog.slice(-5).reverse().map(v => {
+            const timeLeft = v.expiresAt - now;
+            let timerStr = v.status === 'Active' ? new Date(Math.max(0, timeLeft)).toISOString().substr(11, 8) : '--:--:--';
+            return `<tr class="${v.status === 'Expired' ? 'expired-row' : ''}"><td><b>${v.code}</b></td><td style="color:var(--mariposa-pink)">${timerStr}</td><td>${v.status}</td></tr>`;
+        }).join('');
+    }
+
+    function updateFinanceUI() {
+        const active = voucherLog.filter(v => v.status === 'Active');
+        document.getElementById('totalVouchers').innerText = active.length;
+        document.getElementById('estExposure').innerText = `₱${active.reduce((acc, curr) => acc + curr.value, 0)}`;
+    }
+
+    function updateHeatmap() {
+        const counts = { Night: 0, Morning: 0, Afternoon: 0, Evening: 0 };
+        db.forEach(entry => { if(entry.timeSlot) counts[entry.timeSlot]++; });
+        
+        ['Night', 'Morning', 'Afternoon', 'Evening'].forEach(slot => {
+            const el = document.getElementById(`h-${slot.toLowerCase()}`);
+            const count = counts[slot];
+            el.innerHTML = `${count}<span class="h-label">${slot.substr(0,4)}</span>`;
+            // Dynamic Color Intensity
+            const intensity = Math.min(0.8, count * 0.2);
+            el.style.backgroundColor = count > 0 ? `rgba(214, 51, 132, ${intensity})` : '#111';
+            el.style.borderColor = count > 0 ? 'var(--mariposa-pink)' : '#222';
+        });
+    }
+
+    function deleteItem(id) {
+        if(confirm("Delete this entry?")) {
+            db = db.filter(i => i.id !== id);
+            saveData();
+        }
+    }
+
+    function updateEmoji() {
+        const emojiEl = document.getElementById('sentimentEmoji');
+        if(db.length === 0) { emojiEl.innerText = "😐"; return; }
+        const latest = db[db.length - 1].sentiment;
+        emojiEl.innerText = latest === "Positive" ? "😍" : (latest === "Negative" ? "😔" : "😐");
+    }
+
+    function updateChart() {
+        const ctx = document.getElementById('lineChart').getContext('2d');
+        if(lineChart) lineChart.destroy();
+        const last10 = db.slice(-10);
+        lineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last10.map(i => ""),
+                datasets: [{ data: last10.map(i => i.score), borderColor: '#ff85a2', borderWidth: 2, tension: 0.4, fill: false }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: false } } }
+        });
+    }
+
+    function exportData() {
+        const ws = XLSX.utils.json_to_sheet(db);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Report");
+        XLSX.writeFile(wb, "Mariposa_v20_Report.xlsx");
+    }
+
+    function saveData() { 
+        localStorage.setItem('mariposa_v20_db', JSON.stringify(db)); 
+        render(); updateChart(); updateEmoji(); updateFinanceUI(); updateHeatmap();
+    }
+
+    function render() {
+        document.getElementById('historyList').innerHTML = db.slice().reverse().map(i => `
+            <div class="card" style="border-left: ${i.isClinical ? '6px solid var(--critical)' : '1px solid #333'}">
+                <button class="delete-item-btn" onclick="deleteItem(${i.id})">🗑️</button>
+                <span style="font-size:10px; color:${i.sentiment === 'Positive' ? 'var(--pos)' : (i.sentiment === 'Negative' ? 'var(--critical)' : '#aaa')}; font-weight:900;">
+                    ${i.sentiment} ${i.isClinical ? '[CLINICAL]' : ''}
+                </span>
+                <p style="font-size:14px; margin:10px 0;">"${i.text}"</p>
+                <div class="tactical-hub">
+                    <div class="response-box">${i.tacticalReply}</div>
+                    <div class="manager-box">🛠️ ${i.managerAction}</div>
+                    ${i.sentiment !== 'Positive' ? `<button class="btn btn-voucher" onclick="issueVoucher(${i.id}, ${i.isClinical})">🎫 ISSUE VOUCHER</button>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function clearAll() { if(confirm("Clear database?")) { localStorage.clear(); location.reload(); } }
+    
+    saveData();
+</script>
+</body>
+</html>
 
