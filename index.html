@@ -1,1 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D.Z. Mariposa NLP - v31 (ULTIMATE HYBRID)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --mariposa-pink: #ff85a2; --mariposa-hot: #d63384;
+            --mariposa-black: #121212; --mariposa-dark-grey: #1e1e1e;
+            --white: #ffffff; --critical: #ff4757; --pos: #2ed573; 
+            --voucher-blue: #3b82f6; --expired: #555; --intel-gold: #f1c40f;
+            --logistics-purple: #8e44ad; --crisis-orange: #ff7f50;
+        }
+        
+        body { font-family: 'Inter', sans-serif; background: var(--mariposa-black); margin: 0; color: var(--white); overflow-x: hidden; }
+        .container { width: 95%; max-width: 1400px; margin: 10px auto; padding: 10px; box-sizing: border-box; }
+        
+        .navbar { 
+            background: linear-gradient(90deg, #000 0%, var(--mariposa-dark-grey) 100%); 
+            padding: 15px 25px; border-bottom: 2px solid var(--mariposa-hot);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1024px) { .dashboard-grid { grid-template-columns: 420px 1fr; } }
+
+        .card { background: var(--mariposa-dark-grey); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,133,162,0.1); position: relative; margin-bottom: 20px; }
+        
+        .intel-chip { display: inline-block; padding: 4px 10px; border-radius: 20px; background: rgba(241, 196, 15, 0.1); color: var(--intel-gold); font-size: 11px; font-weight: 700; margin-right: 5px; border: 1px solid rgba(241, 196, 15, 0.3); margin-bottom: 5px; }
+
+        .heatmap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
+        .heatmap-cell { height: 40px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; background: #111; border: 1px solid #222; }
+        .h-label { font-size: 8px; color: #666; margin-top: 2px; text-transform: uppercase; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .stat-box { background: #111; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #222; }
+        .stat-val { font-size: 20px; font-weight: 900; color: var(--voucher-blue); display: block; }
+        .stat-lbl { font-size: 10px; color: #666; text-transform: uppercase; }
+
+        .voucher-log-table { width: 100%; font-size: 10px; border-collapse: collapse; margin-top: 10px; }
+        .voucher-log-table td { padding: 5px 0; border-bottom: 1px solid #333; }
+
+        textarea, input[type="text"] { width: 100%; border: 1px solid #333; border-radius: 8px; padding: 12px; background: #000; color: #fff; box-sizing: border-box; }
+        
+        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-main { background: var(--mariposa-hot); color: white; }
+        .btn-crisis { background: var(--crisis-orange); color: white; font-size: 11px; }
+        .btn-clear { background: #444; color: #ff4757; font-size: 8px; padding: 4px 8px; border-radius: 4px; border: 1px solid #666; cursor: pointer; }
+        .btn-copy { background: #333; color: var(--mariposa-pink); font-size: 10px; border: 1px solid var(--mariposa-pink); width: auto; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+
+        .vocab-list { max-height: 150px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
+        .vocab-item { background: #111; padding: 6px; border-radius: 5px; font-size: 10px; border: 1px solid #222; cursor: pointer; }
+
+        .tactical-hub { background: #0b0b0b; border: 1px solid var(--mariposa-pink); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .hub-label { font-size: 10px; color: var(--mariposa-pink); font-weight: 900; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .response-box { color: #ddd; font-size: 13px; line-height: 1.6; border-bottom: 1px solid #222; padding-bottom: 12px; margin-bottom: 12px; white-space: pre-line; }
+
+        #crisisOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; padding: 40px; box-sizing: border-box; overflow-y: auto; }
+        .first-aid-tip { font-size: 11px; background: rgba(255, 71, 87, 0.1); border: 1px solid var(--critical); border-radius: 5px; padding: 10px; margin-top: 10px; color: #ff9f9f; }
+        .logistics-tip { font-size: 11px; background: rgba(142, 68, 173, 0.1); border: 1px solid var(--logistics-purple); border-radius: 5px; padding: 10px; margin-top: 10px; color: #d7bde2; }
+        .chart-container { height: 160px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div>
+            <div style="font-family:'Playfair Display'; font-weight:900; color:var(--mariposa-pink); font-size: 1.2rem;">🌺 D.Z. MARIPOSA NLP</div>
+            <div id="liveClock" style="font-size: 9px; color: var(--pos); letter-spacing: 1px; font-family: monospace;"></div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn btn-crisis" onclick="toggleCrisisReport()" style="width:auto; margin-top:0;">📋 CRISIS REPORT</button>
+            <button class="btn" onclick="exportData()" style="width: auto; padding: 5px 15px; font-size: 11px; background: #222; color: #fff; border: 1px solid #444; margin-top:0;">📥 EXCEL</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <div class="sidebar">
+                <div class="card">
+                    <h4 style="margin:0; color:var(--mariposa-pink); font-size:12px; letter-spacing:1px;">🚨 PAINPOINT DISTRIBUTION</h4>
+                    <div class="chart-container"><canvas id="painChart"></canvas></div>
+                </div>
+
+                <div class="card">
+                    <h4 style="margin:0; color:var(--mariposa-pink); font-size:12px; letter-spacing:1px;">🕒 REVIEW HEATMAP</h4>
+                    <div class="heatmap-grid" id="heatmapGrid">
+                        <div class="heatmap-cell" id="h-night">0<span class="h-label">Night</span></div>
+                        <div class="heatmap-cell" id="h-morning">0<span class="h-label">Morn</span></div>
+                        <div class="heatmap-cell" id="h-afternoon">0<span class="h-label">Aft</span></div>
+                        <div class="heatmap-cell" id="h-evening">0<span class="h-label">Eve</span></div>
+                    </div>
+                </div>
+
+                <div class="card exposure-card">
+                    <h4 style="margin:0; color:var(--voucher-blue); font-size:12px; letter-spacing:1px;">📊 RECOVERY VOUCHERS</h4>
+                    <div class="stat-grid">
+                        <div class="stat-box"><span class="stat-val" id="totalVouchers">0</span><span class="stat-lbl">Active</span></div>
+                        <div class="stat-box"><span class="stat-val" id="estExposure">₱0</span><span class="stat-lbl">Liability</span></div>
+                    </div>
+                    <table class="voucher-log-table"><tbody id="voucherLogBody"></tbody></table>
+                </div>
+
+                <div class="card">
+                    <div style="display:flex; align-items:center; margin-bottom:15px;">
+                        <span id="sentimentEmoji">😐</span>
+                        <h3 style="margin:0; color:var(--mariposa-pink); font-size: 15px;">Analysis Intake</h3>
+                    </div>
+                    <textarea id="reviewInput" placeholder="Paste reviews..."></textarea>
+                    <button class="btn btn-main" onclick="processAnalysis()">⚡ RUN NLP ANALYSIS</button>
+                </div>
+
+                <div class="card">
+                    <h4 style="margin:0; color:var(--intel-gold); font-size:11px; letter-spacing:1px;">📚 VOCABULARY SYNC</h4>
+                    <input type="text" id="vocabSearch" placeholder="Search dictionary..." onkeyup="renderVocab()" style="margin-top:10px; padding: 6px; font-size: 11px;">
+                    <div class="vocab-list" id="vocabContainer"></div>
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <input type="text" id="newWord" placeholder="Word" style="padding: 6px; font-size: 11px;">
+                        <input type="text" id="newMeaning" placeholder="+ or -" style="padding: 6px; font-size: 11px;">
+                        <button class="btn-main" onclick="addVocab()" style="padding:0 10px; border-radius:5px;">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div id="historyList"></div>
+                <div class="card">
+                    <h4 style="margin:0; color:var(--mariposa-pink); font-size:12px; letter-spacing:1px;">📈 SENTIMENT TREND</h4>
+                    <div class="chart-container"><canvas id="lineChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="crisisOverlay">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="color:var(--crisis-orange); font-family:'Playfair Display';">WEEKLY CRISIS & CONVERSION TASK LIST</h2>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-main" style="width:auto; padding: 10px 20px;" onclick="exportCrisisExcel()">EXPORT EXCEL</button>
+                <button class="btn-clear" style="padding: 10px 20px;" onclick="toggleCrisisReport()">CLOSE</button>
+            </div>
+        </div>
+        <div id="crisisContent"></div>
+    </div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('mariposa_v31_db')) || [];
+    let voucherLog = JSON.parse(localStorage.getItem('mariposa_v31_vouchers')) || [];
+    let vocabDict = JSON.parse(localStorage.getItem('mariposa_global_vocab')) || { "masarap": "pos", "hiyang": "pos", "hapdi": "neg" };
+    let lineChart, painChart;
+
+    const SLANG_DICT = {
+        pos: ['ganda','glow','hiyang','effective','legit','dasurb','slay','masarap'],
+        neg: ['hapdi','kirot','fake','scam','late','sunog','irritation','pimple'],
+        sarcasm: ['edi wow','salamat sa lahat ha','ikaw na talaga','wow ha'],
+        jejemon: [/e0w/i, /p0h/i, /mhu/i]
+    };
+
+    const firstAidKnowledge = ["Clinical Rule: STOP use immediately. Rinse with lukewarm water. Cool compress 15 mins. No heavy oils."];
+    const logisticsProtocols = ["Step: Validate tracking. File courier dispute. Offer reship/refund for damaged items."];
+    const STRATEGY_DB = {
+        "Skin Reaction": "Conversion Tip: Offer 'Sensitivity Consultation'. Transparency increases re-purchase by 18%.",
+        "Logistics": "Conversion Tip: 'Delivery Insurance'. Study #88: Proactive refunding creates advocates.",
+        "Authenticity": "Conversion Tip: 'Proof of Source'. Radical honesty converts 40% of skeptics."
+    };
+
+    setInterval(() => { document.getElementById('liveClock').innerText = new Date().toLocaleString(); }, 1000);
+
+    function processAnalysis() {
+        const text = document.getElementById('reviewInput').value.trim();
+        if(!text) return;
+
+        const cleanT = text.toLowerCase();
+        let score = 0;
+        
+        // Dynamic Vocab + Slang check
+        Object.keys(vocabDict).forEach(w => { if(cleanT.includes(w)) score += (vocabDict[w] === 'pos' ? 1 : -1); });
+        SLANG_DICT.pos.forEach(w => { if(cleanT.includes(w)) score++; });
+        SLANG_DICT.neg.forEach(w => { if(cleanT.includes(w)) score--; });
+        
+        // Specific word corrections
+        if(cleanT.includes("masarap")) score += 2;
+
+        let isJejemon = SLANG_DICT.jejemon.some(rx => rx.test(text));
+        let hasClinical = /hapdi|kirot|butlig|rash|sunog|irritation/i.test(text);
+        let hasLogistics = /rider|tagal|deliver|shipping|basag|tapon|leak/i.test(text);
+
+        let sentiment = score > 0 ? "Positive" : (score < 0 ? "Negative" : "Neutral");
+        let painpoint = null;
+        if(score <= 0) {
+            if(hasClinical) painpoint = "Skin Reaction";
+            else if(hasLogistics) painpoint = "Logistics";
+            else painpoint = "Product Quality";
+        }
+
+        db.push({
+            id: Date.now(), text, sentiment, score, 
+            isClinical: hasClinical, isLogistics: hasLogistics,
+            painpoint, timestamp: new Date().toLocaleString(),
+            isJejemon
+        });
+
+        saveData();
+        document.getElementById('reviewInput').value = "";
+    }
+
+    // --- CHART LOGIC RESTORED ---
+    function updateCharts() {
+        const pCtx = document.getElementById('painChart').getContext('2d');
+        const cats = ["Skin Reaction", "Logistics", "Product Quality"];
+        const counts = cats.map(c => db.filter(i => i.painpoint === c).length);
+        if(painChart) painChart.destroy();
+        painChart = new Chart(pCtx, {
+            type: 'bar',
+            data: { labels: ["Skin", "Log", "Qual"], datasets: [{ data: counts, backgroundColor: ['#ff4757', '#8e44ad', '#ff85a2'] }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        const lCtx = document.getElementById('lineChart').getContext('2d');
+        const last10 = db.slice(-10);
+        if(lineChart) lineChart.destroy();
+        lineChart = new Chart(lCtx, {
+            type: 'line',
+            data: { labels: last10.map(i => i.timestamp.split(',')[1]), datasets: [{ data: last10.map(i => i.score), borderColor: '#ff85a2', tension: 0.3 }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    function updateHeatmap() {
+        const slots = { Night:0, Morning:0, Afternoon:0, Evening:0 };
+        db.forEach(e => {
+            const h = new Date(e.id).getHours();
+            let s = h < 6 ? "Night" : h < 12 ? "Morning" : h < 18 ? "Afternoon" : "Evening";
+            slots[s]++;
+        });
+        Object.keys(slots).forEach(s => {
+            document.getElementById(`h-${s.toLowerCase()}`).innerHTML = `${slots[s]}<span class="h-label">${s.substr(0,4)}</span>`;
+        });
+    }
+
+    // --- VOCAB SYNC RESTORED ---
+    function addVocab() {
+        const w = document.getElementById('newWord').value.toLowerCase().trim();
+        const m = document.getElementById('newMeaning').value.trim();
+        if(w && m) {
+            vocabDict[w] = (m === '+' || m.includes('pos')) ? 'pos' : 'neg';
+            localStorage.setItem('mariposa_global_vocab', JSON.stringify(vocabDict));
+            renderVocab();
+        }
+    }
+
+    function renderVocab() {
+        const container = document.getElementById('vocabContainer');
+        const search = document.getElementById('vocabSearch').value.toLowerCase();
+        container.innerHTML = "";
+        Object.keys(vocabDict).forEach(w => {
+            if(w.includes(search)) {
+                const div = document.createElement('div');
+                div.className = "vocab-item";
+                div.style.borderLeft = `3px solid ${vocabDict[w] === 'pos' ? 'var(--pos)' : 'var(--critical)'}`;
+                div.innerText = `${w} (${vocabDict[w]})`;
+                div.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    if(confirm(`Delete ${w}?`)) { delete vocabDict[w]; localStorage.setItem('mariposa_global_vocab', JSON.stringify(vocabDict)); renderVocab(); }
+                };
+                container.appendChild(div);
+            }
+        });
+    }
+
+    // --- UI RENDERING RESTORED ---
+    function render() {
+        document.getElementById('historyList').innerHTML = db.slice().reverse().map(i => `
+            <div class="card" style="border-left: 6px solid ${i.score >= 0 ? 'var(--pos)' : 'var(--critical)'}">
+                <button style="position:absolute; top:15px; right:15px; background:none; border:none; color:#ff4757; cursor:pointer;" onclick="deleteItem(${i.id})">🗑️</button>
+                <div style="margin-bottom:8px;">
+                    <span class="intel-chip">${i.sentiment.toUpperCase()}</span>
+                    ${i.isJejemon ? '<span class="intel-chip" style="color:#00ffff; border-color:#00ffff">JEJEMON</span>' : ''}
+                    ${i.isLogistics ? '<span class="intel-chip" style="background:var(--logistics-purple); color:white; border:none;">LOGISTICS</span>' : ''}
+                </div>
+                <p style="font-size:14px; margin:10px 0;">"${i.text}"</p>
+                
+                ${i.isClinical ? `<div class="first-aid-tip"><b>🏥 PROTOCOL:</b><br>${firstAidKnowledge[0]}</div>` : ''}
+                ${i.isLogistics ? `<div class="logistics-tip"><b>🚚 RECOVERY:</b><br>${logisticsProtocols[0]}</div>` : ''}
+
+                <div class="tactical-hub">
+                    <span class="hub-label">Response Hub</span>
+                    <div class="response-box">Reply: ${i.score < 0 ? 'Pasensya na po. DM us your Order ID for assistance.' : 'Salamat po sa tiwala! 🌸'}</div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-copy" onclick="navigator.clipboard.writeText('Response copied!')">📋 Copy</button>
+                        ${(i.score < 0 && !i.voucherIssued) ? `<button class="btn btn-voucher" onclick="issueVoucher(${i.id})">🎫 ISSUE VOUCHER</button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        updateHeatmap();
+        updateCharts();
+        updateVoucherUI();
+    }
+
+    function issueVoucher(pId) {
+        const id = Date.now();
+        voucherLog.push({ id, parentId: pId, code: 'REC-'+Math.floor(1000+Math.random()*9000), expiresAt: Date.now()+(24*60*60*1000), status: 'Active' });
+        const idx = db.findIndex(i => i.id === pId);
+        db[idx].voucherIssued = true;
+        saveData();
+    }
+
+    function clearVoucher(vId, pId) {
+        voucherLog = voucherLog.filter(v => v.id !== vId);
+        const idx = db.findIndex(i => i.id === pId);
+        if(idx !== -1) db[idx].voucherIssued = false;
+        saveData();
+    }
+
+    function updateVoucherUI() {
+        const active = voucherLog.length;
+        document.getElementById('totalVouchers').innerText = active;
+        document.getElementById('estExposure').innerText = `₱${active * 50}`;
+        document.getElementById('voucherLogBody').innerHTML = voucherLog.slice(-4).reverse().map(v => `
+            <tr>
+                <td><b>${v.code}</b></td>
+                <td><button class="btn-clear" onclick="clearVoucher(${v.id}, ${v.parentId})">CLEAR</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function toggleCrisisReport() {
+        const overlay = document.getElementById('crisisOverlay');
+        overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
+        if(overlay.style.display === 'block') {
+            const negs = db.filter(i => i.score < 0);
+            document.getElementById('crisisContent').innerHTML = `
+                <table style="width:100%; color:white; border-collapse:collapse; margin-top:20px;" id="crisisTable">
+                    <tr style="background:#222;"><th style="padding:10px; border:1px solid #444;">Review</th><th style="padding:10px; border:1px solid #444;">Strategy</th></tr>
+                    ${negs.map(n => `<tr><td style="padding:10px; border:1px solid #444;">${n.text}</td><td style="padding:10px; border:1px solid #444;">${STRATEGY_DB[n.painpoint] || 'General Recovery'}</td></tr>`).join('')}
+                </table>`;
+        }
+    }
+
+    function exportData() {
+        const ws = XLSX.utils.json_to_sheet(db);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Analysis");
+        XLSX.writeFile(wb, "Mariposa_v31_Final.xlsx");
+    }
+
+    function deleteItem(id) { db = db.filter(i => i.id !== id); saveData(); }
+    function saveData() { 
+        localStorage.setItem('mariposa_v31_db', JSON.stringify(db)); 
+        localStorage.setItem('mariposa_v31_vouchers', JSON.stringify(voucherLog));
+        render(); 
+    }
+
+    renderVocab();
+    saveData();
+</script>
+</body>
+</html>
 
