@@ -1,1 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>D.Z. Mariposa NLP - v40 Titan Overlord</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --mariposa-pink: #ff85a2; --mariposa-hot: #d63384; --mariposa-black: #0f0f0f; 
+            --mariposa-dark-grey: #1a1a1a; --white: #ffffff; --critical: #ff4757; 
+            --pos: #2ed573; --voucher-blue: #3b82f6; --intel-gold: #f1c40f;
+            --logistics-purple: #8e44ad; --crisis-orange: #ff7f50;
+        }
+        
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; background: var(--mariposa-black); 
+            margin: 0; color: var(--white); min-height: 100vh; overflow-x: hidden;
+            display: flex; flex-direction: column;
+        }
+        .container { width: 100%; max-width: 1600px; margin: 0 auto; padding: 15px; flex-grow: 1; }
+        
+        .navbar { 
+            background: #000; padding: 15px 25px; border-bottom: 3px solid var(--mariposa-hot);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1100px) { .dashboard-grid { grid-template-columns: 400px 1fr; } }
+
+        .card { background: var(--mariposa-dark-grey); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,133,162,0.1); position: relative; }
+        .priority-pulse { border: 2px solid var(--critical) !important; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0px rgba(255, 71, 87, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); } 100% { box-shadow: 0 0 0 0px rgba(255, 71, 87, 0); } }
+
+        .sentiment-indicator { font-weight: 900; padding: 4px 12px; border-radius: 4px; font-size: 10px; margin-right: 10px; }
+        .pos-bg { background: rgba(46, 213, 115, 0.2); color: var(--pos); border: 1px solid var(--pos); }
+        .neg-bg { background: rgba(255, 71, 87, 0.2); color: var(--critical); border: 1px solid var(--critical); }
+
+        .heatmap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 15px; }
+        .heatmap-cell { height: 50px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; background: #000; border: 1px solid #333; }
+        .h-label { font-size: 8px; color: #888; text-transform: uppercase; }
+
+        textarea { width: 100%; height: 140px; border: 2px solid #333; border-radius: 10px; padding: 15px; background: #050505; color: #fff; font-size: 15px; resize: none; transition: 0.3s; }
+        textarea:focus { border-color: var(--mariposa-pink); outline: none; }
+        
+        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 900; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase; }
+        .btn-main { background: var(--mariposa-hot); color: white; width: 100%; margin-top: 15px; }
+        .btn-neg-bulk { background: #000; border: 1px solid var(--critical); color: var(--critical); width: 100%; margin-top: 10px; }
+        
+        .search-container { background: #000; border: 2px solid var(--intel-gold); border-radius: 10px; padding: 8px 15px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .search-container input { background: transparent; border: none; color: white; flex: 1; outline: none; }
+
+        .tactical-hub { background: #000; border-radius: 10px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--mariposa-pink); }
+        
+        /* Overlays */
+        #crisisOverlay, #bulkNegOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 2000; display: none; padding: 30px; overflow-y: auto; }
+        .chart-wrap { height: 180px; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div>
+            <div style="font-family:'Playfair Display'; font-weight:900; color:var(--mariposa-pink); font-size: 1.6rem;">🌺 MARIPOSA TITAN v40</div>
+            <div id="liveClock" style="font-size: 10px; color: var(--pos); font-family: monospace;"></div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn" onclick="toggleCrisisReport()" style="background:var(--crisis-orange); color:white; font-size:10px; padding: 5px 15px;">📋 STRATEGY HUB</button>
+            <button class="btn" onclick="exportData()" style="background:var(--white); color:black; font-size:10px; padding: 5px 15px;">📥 EXCEL</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <div class="sidebar">
+                <div class="card" style="border-top: 4px solid var(--voucher-blue);">
+                    <h4 style="margin:0 0 15px 0; color:var(--voucher-blue); font-size:11px;">💳 RECOVERY LIABILITY (TOTAL)</h4>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div style="background:#000; padding:10px; border-radius:8px; text-align:center;">
+                            <div style="font-size:20px; font-weight:900; color:var(--voucher-blue);" id="activeVouchers">0</div>
+                            <div style="font-size:8px; color:#666;">UNRESOLVED</div>
+                        </div>
+                        <div style="background:#000; padding:10px; border-radius:8px; text-align:center;">
+                            <div style="font-size:20px; font-weight:900; color:var(--pos);" id="liabilityAmt">₱0</div>
+                            <div style="font-size:8px; color:#666;">CURRENT RISK</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:15px; max-height:150px; overflow-y:auto;">
+                        <table style="width:100%; font-size:11px;" id="voucherTable"></table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4 style="margin:0; color:var(--mariposa-pink); font-size:11px;">🕒 REVIEW HEATMAP</h4>
+                    <div class="heatmap-grid">
+                        <div class="heatmap-cell" id="h-night">0<span class="h-label">Night</span></div>
+                        <div class="heatmap-cell" id="h-morning">0<span class="h-label">Morn</span></div>
+                        <div class="heatmap-cell" id="h-afternoon">0<span class="h-label">Aft</span></div>
+                        <div class="heatmap-cell" id="h-evening">0<span class="h-label">Eve</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4 style="margin:0; color:var(--mariposa-pink); font-size:11px;">🚨 PAINPOINT DISTRIBUTION</h4>
+                    <div class="chart-wrap"><canvas id="painChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="search-container">
+                    <input type="text" id="masterSearch" onkeyup="render()" placeholder="Filter results...">
+                    <button class="btn" id="priorityToggle" onclick="togglePriority()" style="background:var(--critical); color:white; padding:5px 15px; font-size:10px; margin:0;">🚩 PRIORITY ONLY</button>
+                </div>
+
+                <div class="card" style="border-left: 8px solid var(--mariposa-hot);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2 style="margin:0; font-family:'Playfair Display'; color:var(--mariposa-pink);">Bulk Intake</h2>
+                        <div id="sentimentFace" style="font-size:45px;">😐</div>
+                    </div>
+                    <textarea id="bulkInput" placeholder="Paste reviews here..."></textarea>
+                    <button class="btn btn-main" onclick="analyzeBulk()">⚡ RUN OMNI-TITAN ANALYSIS</button>
+                    <button class="btn btn-neg-bulk" onclick="openBulkNegReply()">🛡️ SMART BULK REPLY (NEGATIVE)</button>
+                </div>
+
+                <div class="card" style="margin-top:20px;">
+                    <h4 style="margin:0; color:var(--mariposa-pink); font-size:11px;">📈 SENTIMENT TREND</h4>
+                    <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+                </div>
+
+                <div id="resultsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="crisisOverlay">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h1 style="color:var(--crisis-orange); font-family:'Playfair Display'; margin:0;">WEEKLY STRATEGY</h1>
+            <button class="btn" onclick="toggleCrisisReport()" style="background:white; color:black;">CLOSE</button>
+        </div>
+        <div id="crisisList"></div>
+    </div>
+
+    <div id="bulkNegOverlay">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h1 style="color:var(--critical); font-family:'Playfair Display'; margin:0;">NEGATIVE BULK RECOVERY</h1>
+            <button class="btn" onclick="document.getElementById('bulkNegOverlay').style.display='none'" style="background:white; color:black;">CLOSE</button>
+        </div>
+        <div id="bulkNegList"></div>
+    </div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('dz_v40_db')) || [];
+    let vouchers = JSON.parse(localStorage.getItem('dz_v40_vouchers')) || [];
+    let priorityOnly = false;
+    let painChart, trendChart;
+
+    const TITAN_DATA = {
+        positive: ['masarap','hiyang','glow','legit','mabango','sulit','lami','smooth','effective','dasurb','quality','bilis','ganda'],
+        negative: ['hapdi','peke','scam','fake','tapon','basag','late','irritation','rash','sunog','mahapdi','kati','pula','loko','bad'],
+        responses: {
+            pos: "Salamat sa tiwala! Stay glowing with Mariposa. ✨",
+            neg: "Naku, pasensya na po sa na-experience niyo. Pakisend po ang Order ID sa DM para ma-assist namin kayo agad at ma-refund/replace.",
+            neu: "Thank you for the feedback! We will use this to improve."
+        },
+        conversions: {
+            "Skin Reaction": "Strategy: Clinical Recovery. Advisory: Stop use. Send Fragrance-Free Replacement + ₱50 Med-Credit.",
+            "Logistics": "Strategy: Fulfillment Audit. Immediate Reshipment + ₱10 Shipping Voucher.",
+            "Product Quality": "Strategy: Replacement & Education. Send 'Correct Usage' video guide + ₱10 Discount."
+        }
+    };
+
+    function playBeep() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = "sine"; osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.start(); osc.stop(ctx.currentTime + 0.1);
+    }
+
+    function analyzeBulk() {
+        const input = document.getElementById('bulkInput').value.trim();
+        if(!input) return;
+        const lines = input.split('\n').filter(l => l.trim().length > 0);
+        
+        let batchScore = 0;
+        lines.forEach(text => {
+            const low = text.toLowerCase();
+            let score = 0;
+            if(low.includes('masarap')) score += 5;
+            TITAN_DATA.positive.forEach(w => { if(low.includes(w)) score += 2; });
+            TITAN_DATA.negative.forEach(w => { if(low.includes(w)) score -= 3; });
+
+            const isClinical = /hapdi|rash|sunog|kati|pula|irritation/i.test(low);
+            const isLogistics = /tagal|rider|shipping|basag|tapon|leak|delay/i.test(low);
+            const isPriority = isClinical || /fake|scam|peke|refund|loko/i.test(low);
+
+            db.push({
+                id: Date.now() + Math.random(),
+                text, score,
+                sentiment: score > 0 ? "Positive" : (score < 0 ? "Negative" : "Neutral"),
+                isPriority, isClinical, isLogistics,
+                painpoint: isClinical ? "Skin Reaction" : (isLogistics ? "Logistics" : "Product Quality"),
+                timestamp: new Date().toLocaleString(),
+                hour: new Date().getHours(),
+                vIssued: false
+            });
+            batchScore += score;
+        });
+
+        const face = document.getElementById('sentimentFace');
+        if(batchScore > 2) face.innerText = "😊";
+        else if(batchScore < -2) face.innerText = "😡";
+        else face.innerText = "😐";
+
+        playBeep();
+        saveData();
+        document.getElementById('bulkInput').value = "";
+    }
+
+    function openBulkNegReply() {
+        const negs = db.filter(i => i.score < 0 && !i.vIssued);
+        const overlay = document.getElementById('bulkNegOverlay');
+        overlay.style.display = 'block';
+        
+        if(negs.length === 0) {
+            document.getElementById('bulkNegList').innerHTML = "<p>All negative reviews have been addressed!</p>";
+            return;
+        }
+
+        document.getElementById('bulkNegList').innerHTML = negs.map(n => `
+            <div style="background:#111; padding:20px; border-radius:10px; margin-bottom:15px; border-left: 5px solid var(--critical);">
+                <div style="color:var(--critical); font-weight:bold; font-size:12px; margin-bottom:5px;">${n.painpoint.toUpperCase()}</div>
+                <div style="font-size:14px; margin-bottom:15px;">"${n.text}"</div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn" style="background:var(--white); color:black; font-size:10px;" onclick="navigator.clipboard.writeText('${TITAN_DATA.responses.neg}')">📋 COPY RECOVERY TEXT</button>
+                    <button class="btn" style="background:var(--voucher-blue); color:white; font-size:10px;" onclick="giveVoucher(${n.id}); openBulkNegReply();">🎫 ISSUE AUTO-VOUCHER (₱${(n.isPriority||n.isClinical)?50:10})</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function giveVoucher(pId) {
+        const item = db.find(i => i.id === pId);
+        if(item && !item.vIssued) {
+            item.vIssued = true;
+            const amt = (item.isPriority || item.isClinical) ? 50 : 10;
+            const code = 'MAR-' + Math.floor(1000+Math.random()*9000);
+            vouchers.push({ id: Date.now(), code, amt, text: item.text });
+            navigator.clipboard.writeText(code);
+            saveData();
+        }
+    }
+
+    function clearAndStop(vId) {
+        vouchers = vouchers.filter(v => v.id !== vId);
+        saveData();
+    }
+
+    function render() {
+        const search = document.getElementById('masterSearch').value.toLowerCase();
+        let filtered = db.filter(i => i.text.toLowerCase().includes(search));
+        if(priorityOnly) filtered = filtered.filter(i => i.isPriority);
+
+        document.getElementById('resultsList').innerHTML = filtered.slice().reverse().map(i => `
+            <div class="card ${i.isPriority ? 'priority-pulse' : ''}" style="margin-top:15px; border-left: 6px solid ${i.score > 0 ? 'var(--pos)' : (i.score < 0 ? 'var(--critical)' : 'gray')}">
+                <span class="sentiment-indicator ${i.score >= 0 ? 'pos-bg' : 'neg-bg'}">${i.sentiment.toUpperCase()}</span>
+                <p style="font-size:14px; margin:15px 0;">"${i.text}"</p>
+                <div class="tactical-hub">
+                    <div style="font-size:11px; color:var(--intel-gold); margin-bottom:10px;"><b>99.9% STRATEGY:</b> ${TITAN_DATA.conversions[i.painpoint] || 'Quality Protocol'}</div>
+                    <div style="background:#111; padding:10px; border-radius:5px; font-size:12px; color:#ccc; margin-bottom:10px;"><b>SUGGESTED:</b> ${i.score > 0 ? TITAN_DATA.responses.pos : (i.score < 0 ? TITAN_DATA.responses.neg : TITAN_DATA.responses.neu)}</div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn" style="background:#222; color:var(--mariposa-pink); font-size:9px; width:auto;" onclick="navigator.clipboard.writeText(this.parentElement.previousElementSibling.innerText)">📋 COPY RESPONSE</button>
+                        ${(i.score < 0 && !i.vIssued) ? `<button class="btn" style="background:var(--voucher-blue); color:white; font-size:9px; width:auto;" onclick="giveVoucher(${i.id})">🎫 ISSUE VOUCHER</button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        updateStats();
+        updateCharts();
+    }
+
+    function updateStats() {
+        document.getElementById('activeVouchers').innerText = vouchers.length;
+        const totalRisk = vouchers.reduce((sum, v) => sum + v.amt, 0);
+        document.getElementById('liabilityAmt').innerText = "₱" + totalRisk;
+        
+        document.getElementById('voucherTable').innerHTML = vouchers.map(v => `
+            <tr style="border-bottom:1px solid #333;">
+                <td style="padding:8px 0;">${v.code} (₱${v.amt})</td>
+                <td style="text-align:right;"><button class="btn" style="background:none; color:var(--critical); font-size:8px;" onclick="clearAndStop(${v.id})">CLEAR & STOP</button></td>
+            </tr>
+        `).join('');
+
+        const heat = { night:0, morning:0, afternoon:0, evening:0 };
+        db.forEach(i => {
+            const h = i.hour;
+            if(h < 6) heat.night++; else if(h < 12) heat.morning++; else if(h < 18) heat.afternoon++; else heat.evening++;
+        });
+        document.getElementById('h-night').childNodes[0].nodeValue = heat.night;
+        document.getElementById('h-morning').childNodes[0].nodeValue = heat.morning;
+        document.getElementById('h-afternoon').childNodes[0].nodeValue = heat.afternoon;
+        document.getElementById('h-evening').childNodes[0].nodeValue = heat.evening;
+    }
+
+    function updateCharts() {
+        if(painChart) painChart.destroy();
+        painChart = new Chart(document.getElementById('painChart'), {
+            type: 'doughnut',
+            data: { labels: ['Skin', 'Log', 'Qual'], datasets: [{ data: ['Skin Reaction', 'Logistics', 'Product Quality'].map(c => db.filter(i => i.painpoint === c).length), backgroundColor: ['#ff4757', '#8e44ad', '#ff85a2'] }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+        if(trendChart) trendChart.destroy();
+        const slice = db.slice(-10);
+        trendChart = new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: { labels: slice.map(i => i.timestamp.split(',')[1]), datasets: [{ data: slice.map(i => i.score), borderColor: '#ff85a2', tension: 0.4 }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    function toggleCrisisReport() {
+        const overlay = document.getElementById('crisisOverlay');
+        overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
+        const negs = db.filter(i => i.score < 0);
+        document.getElementById('crisisList').innerHTML = negs.map(n => `
+            <div style="background:#111; padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--intel-gold);">
+                <div style="font-size:12px; color:var(--intel-gold); margin-bottom:5px;">${TITAN_DATA.conversions[n.painpoint]}</div>
+                <div style="font-size:13px;">"${n.text}"</div>
+            </div>
+        `).join('');
+    }
+
+    function togglePriority() { priorityOnly = !priorityOnly; render(); }
+    function saveData() { localStorage.setItem('dz_v40_db', JSON.stringify(db)); localStorage.setItem('dz_v40_vouchers', JSON.stringify(vouchers)); render(); }
+    function exportData() {
+        const ws = XLSX.utils.json_to_sheet(db);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "SentimentData");
+        XLSX.writeFile(wb, "Mariposa_Titan_v40.xlsx");
+    }
+    setInterval(() => { document.getElementById('liveClock').innerText = new Date().toLocaleString(); }, 1000);
+    render();
+</script>
+</body>
+</html>
 
