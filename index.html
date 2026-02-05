@@ -1,1 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MARIPOSA v36.4 - MOBILE SYNC</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --m-pink: #ff85a2; --m-hot: #d63384; --m-black: #0a0a0a; --white: #ffffff; --critical: #ff4757; --pos: #2ed573; --voucher: #3b82f6; --gold: #f1c40f; --bg: var(--m-black); --card-bg: #141414; --text: var(--white); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 50px; }
+        .navbar { background: var(--m-black); padding: 15px; border-bottom: 3px solid var(--m-hot); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        .container { padding: 10px; display: flex; flex-direction: column; gap: 15px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid rgba(255,133,162,0.15); }
+        textarea, input, select { width: 100%; background: #000; color: var(--text); border: 1px solid #333; border-radius: 8px; padding: 12px; box-sizing: border-box; font-size: 14px; margin-bottom: 10px; }
+        .btn { padding: 14px; border-radius: 8px; border: none; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 12px; }
+        .btn-main { background: linear-gradient(45deg, var(--m-hot), #ff5e78); color: white; }
+        .btn-sync { background: var(--voucher); color: white; margin-top: 10px; }
+        .status-bar { font-size: 10px; font-weight: 900; display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; }
+        .response-box { background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; border-left: 4px solid var(--gold); margin: 10px 0; font-size: 13px; line-height: 1.5; }
+        .badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 900; color: black; }
+    </style>
+</head>
+<body>
 
+<nav class="navbar">
+    <div>
+        <div style="font-family:'Playfair Display'; font-weight:900; color:var(--m-pink); font-size: 1.2rem;">🌺 MARIPOSA v36.4</div>
+        <div class="status-bar" id="apiStatus"><div class="dot" style="background:grey"></div> NO BRIDGE</div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="card">
+        <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--voucher);">🛰️ NEURAL KEY (GEMINI)</h4>
+        <input type="password" id="apiKey" placeholder="Paste Gemini Key Here" onchange="saveKey()">
+        <p style="font-size:10px; color:#888; margin:0;">Uses Proxy Bridge: No Extension Needed.</p>
+    </div>
+
+    <div class="card">
+        <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--m-pink);">📥 DATA INTAKE</h4>
+        <textarea id="reviewInput" style="height:80px;" placeholder="Paste customer reviews..."></textarea>
+        <button class="btn btn-main" id="goBtn" onclick="processIntake()">⚡ ANALYZE SENTIMENT</button>
+    </div>
+
+    <div id="resultsList"></div>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('m364_db')) || [];
+    let kb = JSON.parse(localStorage.getItem('m364_kb')) || { "rider": {w:-30, c:"Rider", r:"We apologize for the rider behavior."} };
+
+    function saveKey() {
+        const key = document.getElementById('apiKey').value;
+        localStorage.setItem('m364_key', key);
+        document.getElementById('apiStatus').innerHTML = `<div class="dot" style="background:var(--pos)"></div> BRIDGE READY`;
+    }
+
+    window.onload = () => {
+        document.getElementById('apiKey').value = localStorage.getItem('m364_key') || '';
+        if(document.getElementById('apiKey').value) saveKey();
+        render();
+    };
+
+    async function callGemini(text) {
+        const key = document.getElementById('apiKey').value;
+        if(!key) return null;
+        
+        // Proxy Bridge to bypass CORS on Mobile
+        const proxy = "https://corsproxy.io/?";
+        const target = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        
+        try {
+            const response = await fetch(proxy + encodeURIComponent(target), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: `Review: "${text}". Analyze and return ONLY raw JSON: {"trigger":"keyword","score":-40,"cat":"Skin","suggest":"reply"}` }] }]
+                })
+            });
+            const data = await response.json();
+            const raw = data.candidates[0].content.parts[0].text;
+            return JSON.parse(raw.replace(/```json|```/g, "").trim());
+        } catch (e) {
+            return { trigger:"Error", score:0, cat:"Network", suggest: "Sync Error: " + e.message };
+        }
+    }
+
+    async function processIntake() {
+        const input = document.getElementById('reviewInput').value.trim();
+        if(!input) return;
+        const btn = document.getElementById('goBtn');
+        btn.disabled = true; btn.innerText = "THINKING...";
+
+        for (let line of input.split('\n')) {
+            if(!line.trim()) continue;
+            let res;
+            // Local check
+            let match = Object.keys(kb).find(k => line.toLowerCase().includes(k));
+            if(match) {
+                res = { text: line, score: kb[match].w, cat: kb[match].c, suggest: kb[match].r, found: true };
+            } else {
+                const ai = await callGemini(line);
+                res = { text: line, score: ai.score, cat: ai.cat, suggest: ai.suggest, trigger: ai.trigger, found: false };
+            }
+            db.push({ ...res, id: Date.now() + Math.random() });
+        }
+        
+        localStorage.setItem('m364_db', JSON.stringify(db));
+        document.getElementById('reviewInput').value = '';
+        btn.disabled = false; btn.innerText = "⚡ ANALYZE SENTIMENT";
+        render();
+    }
+
+    function teach(trigger, score, cat, suggest, id) {
+        kb[trigger.toLowerCase()] = { w: score, c: cat, r: suggest };
+        const item = db.find(i => i.id === id);
+        if(item) item.found = true;
+        localStorage.setItem('m364_kb', JSON.stringify(kb));
+        localStorage.setItem('m364_db', JSON.stringify(db));
+        render();
+    }
+
+    function render() {
+        document.getElementById('resultsList').innerHTML = db.slice().reverse().map(i => `
+            <div class="card" style="border-left: 5px solid ${i.score < 0 ? 'var(--critical)' : 'var(--pos)'}">
+                <div style="display:flex; justify-content:space-between;">
+                    <span class="badge" style="background:${i.found ? 'var(--gold)' : 'var(--voucher)'}">${i.cat}</span>
+                    <button onclick="del(${i.id})" style="background:none; border:none; color:#555;">✕</button>
+                </div>
+                <p style="margin:10px 0; font-size:14px;"><b>"${i.text}"</b></p>
+                <div class="response-box"><b>REPLY:</b> ${i.suggest}</div>
+                ${!i.found && i.trigger ? `<button class="btn btn-sync" onclick="teach('${i.trigger}',${i.score},'${i.cat}','${i.suggest}',${i.id})">🎓 LEARN: ${i.trigger}</button>` : ''}
+            </div>
+        `).join('');
+    }
+
+    function del(id) { db = db.filter(i => i.id !== id); localStorage.setItem('m364_db', JSON.stringify(db)); render(); }
+    function exportData() {
+        const ws = XLSX.utils.json_to_sheet(db);
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Mariposa_Report");
+        XLSX.writeFile(wb, "Mariposa_v36.4.xlsx");
+    }
+</script>
+</body>
+</html>
