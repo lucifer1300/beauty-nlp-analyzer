@@ -1,1 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D.Z. Mariposa NLP - v29.4 TITAN BULK</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --mariposa-pink: #ff85a2; --mariposa-hot: #d63384;
+            --mariposa-black: #121212; --mariposa-dark-grey: #1e1e1e;
+            --white: #ffffff; --critical: #ff4757; --pos: #2ed573; 
+            --voucher-blue: #3b82f6; --intel-gold: #f1c40f;
+            --logistics-purple: #8e44ad;
+        }
+        
+        body { font-family: 'Inter', sans-serif; background: var(--mariposa-black); margin: 0; color: var(--white); }
+        .container { width: 95%; max-width: 1400px; margin: 10px auto; padding: 10px; display: grid; gap: 20px; grid-template-columns: 1fr; }
+        @media (min-width: 1024px) { .container { grid-template-columns: 400px 1fr; } }
+        
+        .navbar { background: #000; padding: 15px 25px; border-bottom: 2px solid var(--mariposa-hot); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        .card { background: var(--mariposa-dark-grey); border-radius: 12px; padding: 18px; border: 1px solid rgba(255,133,162,0.1); margin-bottom: 15px; }
+        
+        textarea { width: 100%; height: 120px; background: #000; color: #fff; border: 1px solid #333; border-radius: 8px; padding: 10px; box-sizing: border-box; font-size: 13px; }
+        .btn { padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; text-transform: uppercase; font-size: 11px; }
+        .btn-main { background: var(--mariposa-hot); color: white; }
+        .btn-clear { background: var(--critical); color: white; font-size: 9px; padding: 3px 6px; border-radius: 4px; width: auto; margin: 0; cursor: pointer; border:none; }
+
+        .response-box { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border-left: 3px solid var(--intel-gold); margin-top: 10px; font-size: 12px; }
+        .action-tag { display: inline-block; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; margin-bottom: 5px; }
+        
+        .chart-container { height: 180px; }
+        table { width: 100%; font-size: 11px; border-collapse: collapse; }
+        th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid #222; }
+        .mode-label { font-size: 10px; color: #666; margin-bottom: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div style="font-family:'Playfair Display'; font-weight:900; color:var(--mariposa-pink); font-size: 1.3rem;">🌺 MARIPOSA v29.4 TITAN BULK</div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn" onclick="exportCrisisReport()" style="width:auto; background:var(--critical); color:white; padding: 5px 15px;">🚨 CRISIS EXCEL</button>
+            <button class="btn" onclick="exportData()" style="width:auto; background:#333; color:white; padding: 5px 15px;">📥 MASTER EXCEL</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="card">
+                <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--mariposa-pink);">📊 PAIN POINT DISTRIBUTION</h4>
+                <div class="chart-container"><canvas id="barChart"></canvas></div>
+            </div>
+
+            <div class="card" style="border: 1px solid var(--voucher-blue)">
+                <h4 style="margin:0 0 10px 0; color:var(--voucher-blue); font-size:12px;">🎟️ ACTIVE VOUCHERS</h4>
+                <div style="font-size: 11px; margin-bottom: 10px;">Total Liability: <b id="estExposure" style="color:var(--pos)">₱0</b></div>
+                <div style="max-height: 150px; overflow-y: auto;">
+                    <table id="voucherTable"></table>
+                </div>
+            </div>
+
+            <div class="card">
+                <span class="mode-label">BULK MODE: Paste multiple reviews (one per line)</span>
+                <textarea id="reviewInput" placeholder="Enter review(s) here..."></textarea>
+                <button class="btn btn-main" onclick="processIntake()">⚡ ANALYZE ALL</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--mariposa-pink);">📈 SENTIMENT TREND</h4>
+                <div class="chart-container"><canvas id="lineChart"></canvas></div>
+            </div>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('mariposa_v29_db')) || [];
+    let vouchers = JSON.parse(localStorage.getItem('mariposa_v29_vouchers')) || [];
+    let lineChart, barChart;
+
+    // Core Analysis Engine (Preserved Logic)
+    function analyzeText(text) {
+        const low = text.toLowerCase();
+        let score = 0;
+        const posWords = ['ganda', 'hiyang', 'mabango', 'sulit', 'smooth', 'effective', 'love', 'nice'];
+        const negWords = ['hapdi', 'tapon', 'basag', 'fake', 'scam', 'tagal', 'irritation', 'rash', 'pula', 'kati'];
+        const sarcasmTriggers = ['wow', 'galing', 'bilis', 'order pa', 'thank you', 'grabe naman', 'ayos ha', 'responsive', 'best seller'];
+
+        let containsPain = negWords.some(n => low.includes(n)) || /late|dismaya|refund/i.test(low);
+        let isSarcastic = sarcasmTriggers.some(s => low.includes(s)) && containsPain;
+        
+        posWords.forEach(w => { if(low.includes(w)) score += 3; });
+        negWords.forEach(w => { if(low.includes(w)) score -= 5; });
+        
+        if(low.includes('masarap')) score += 6; // Masarap fix
+        if(isSarcastic) score = (score > 0) ? (score * -3) : (score - 10);
+
+        const isClin = /hapdi|irritation|rash|sunog|kati/i.test(low);
+        const isLog = /tagal|rider|shipping|basag|tapon|leak/i.test(low);
+
+        let action = "Standard Engagement";
+        let suggest = "Thank you so much! Dasurb mo ang glow! ✨";
+        
+        if(score < 0) {
+            action = isClin ? "🚨 CLINICAL PROTOCOL" : (isLog ? "📦 LOGISTICS DISPUTE" : "💬 QUALITY ASSURANCE");
+            suggest = isClin ? "Naku, stop use po agad! Please rinse with lukewarm water. DM us for a refund." : "Pasensya na po sa delay or damage. Message us your Order ID para ma-assist namin kayo agad.";
+        } else if (score === 0) {
+            action = "💬 NEUTRAL FEEDBACK";
+            suggest = "Thank you for the feedback! Let us know how we can improve. ❤️";
+        }
+
+        return { text, score, sentiment: score > 0 ? "Positive" : (score < 0 ? "Negative" : "Neutral"), action, suggest, isClin, isLog };
+    }
+
+    // New Bulk Processing Wrapper
+    function processIntake() {
+        const input = document.getElementById('reviewInput').value.trim();
+        if(!input) return;
+        
+        // Split by new line for bulk processing
+        const lines = input.split('\n').filter(line => line.trim() !== "");
+        
+        lines.forEach(text => {
+            const result = analyzeText(text);
+            db.push({
+                ...result,
+                id: Date.now() + Math.random(), // Unique ID for bulk items
+                timestamp: new Date().toLocaleString(),
+                vIssued: false
+            });
+        });
+        
+        document.getElementById('reviewInput').value = '';
+        saveData();
+    }
+
+    function clearVoucher(id) {
+        vouchers = vouchers.filter(v => v.id !== id);
+        saveData();
+    }
+
+    function issueVoucher(id) {
+        const item = db.find(i => i.id === id);
+        item.vIssued = true;
+        vouchers.push({ id: Date.now(), code: 'MAR-'+Math.floor(Math.random()*9999), amt: 50 });
+        saveData();
+    }
+
+    function render() {
+        // History Cards with Action Tags and Responses preserved
+        document.getElementById('historyList').innerHTML = db.slice().reverse().map(i => `
+            <div class="card" style="border-left: 6px solid ${i.score > 0 ? 'var(--pos)' : (i.score < 0 ? 'var(--critical)' : '#555')}">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="action-tag" style="background:${i.score < 0 ? 'rgba(255,71,87,0.2)' : 'rgba(46,213,115,0.2)'}; color:${i.score < 0 ? 'var(--critical)' : 'var(--pos)'}">${i.action}</span>
+                        <p style="margin:5px 0; font-size:14px;">"${i.text}"</p>
+                    </div>
+                    <button onclick="deleteItem(${i.id})" style="background:none; border:none; color:#444; cursor:pointer;">🗑️</button>
+                </div>
+                <div class="response-box"><b>Suggested Response:</b><br>${i.suggest}</div>
+                <div style="margin-top:10px;">
+                    ${(i.score < 0 && !i.vIssued) ? `<button class="btn-clear" style="background:var(--voucher-blue)" onclick="issueVoucher(${i.id})">🎫 ISSUE VOUCHER</button>` : ''}
+                </div>
+            </div>
+        `).join('');
+
+        document.getElementById('estExposure').innerText = '₱' + (vouchers.length * 50);
+        document.getElementById('voucherTable').innerHTML = vouchers.map(v => `
+            <tr><td>${v.code} (₱${v.amt})</td><td style="text-align:right;"><button class="btn-clear" onclick="clearVoucher(${v.id})">CLEAR</button></td></tr>
+        `).join('');
+
+        updateCharts();
+    }
+
+    function updateCharts() {
+        if(lineChart) lineChart.destroy();
+        if(barChart) barChart.destroy();
+
+        const slice = db.slice(-10);
+        lineChart = new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: { labels: slice.map(i => i.timestamp.split(',')[1]), datasets: [{ data: slice.map(i => i.score), borderColor: '#ff85a2', tension: 0.3, fill: false }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#222' } } } }
+        });
+
+        const clinCount = db.filter(i => i.isClin).length;
+        const logCount = db.filter(i => i.isLog).length;
+        const qualCount = db.filter(i => i.score < 0 && !i.isClin && !i.isLog).length;
+
+        barChart = new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: { labels: ['Skin', 'Logistics', 'Quality'], datasets: [{ data: [clinCount, logCount, qualCount], backgroundColor: ['#ff4757', '#8e44ad', '#f1c40f'] }] },
+            options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    function exportCrisisReport() {
+        const data = db.filter(i => i.score < 0).map(i => ({ Date: i.timestamp, Review: i.text, Action: i.action, Suggestion: i.suggest }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Crisis_Recovery");
+        XLSX.writeFile(wb, "Mariposa_Crisis_Report.xlsx");
+    }
+
+    function exportData() {
+        const ws = XLSX.utils.json_to_sheet(db);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "FullData");
+        XLSX.writeFile(wb, "Mariposa_Master_Data.xlsx");
+    }
+
+    function deleteItem(id) { db = db.filter(i => i.id !== id); saveData(); }
+    function saveData() { 
+        localStorage.setItem('mariposa_v29_db', JSON.stringify(db)); 
+        localStorage.setItem('mariposa_v29_vouchers', JSON.stringify(vouchers)); 
+        render(); 
+    }
+
+    saveData();
+</script>
+</body>
+</html>
 
