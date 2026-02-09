@@ -1,1 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mariposa NLP Pro | Recovery Edition</title>
+    <style>
+        :root {
+            --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --pink: #f43f5e;
+            --blue: #0ea5e9; --green: #10b981; --border: #e2e8f0; 
+            --shadow: 0 10px 15px -3px rgba(0,0,0,0.1); --glass: rgba(255, 255, 255, 0.8);
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --border: #334155; 
+            --shadow: 0 20px 25px -5px rgba(0,0,0,0.4); --glass: rgba(30, 41, 59, 0.8);
+        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; transition: 0.3s; line-height: 1.5; }
+        .container { max-width: 1400px; margin: auto; width: 100%; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .theme-btn { padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border); background: var(--card); cursor: pointer; color: var(--text); font-weight: 600; font-size: 0.8rem; }
+
+        .controls { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; 
+            background: var(--glass); backdrop-filter: blur(10px); padding: 20px; border-radius: 16px; 
+            border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 25px;
+        }
+        .btn { border: none; padding: 12px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-danger { background: #64748b; } .btn-danger:hover { background: var(--pink); }
+        
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stats-box { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .stats-box h3 { margin: 0 0 15px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; font-weight: 800; }
+        
+        .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap: 10px; }
+        .stat-unit { text-align: center; }
+        .stat-unit b { display: block; font-size: 1.5rem; color: var(--blue); }
+        .stat-unit small { font-size: 0.65rem; opacity: 0.6; font-weight: bold; }
+
+        /* Results & Tracking */
+        .main-layout { display: grid; grid-template-columns: 1fr 350px; gap: 25px; }
+        @media (max-width: 1100px) { .main-layout { grid-template-columns: 1fr; } }
+
+        #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative; }
+        
+        /* Voucher Tracker Sidebar */
+        .tracker-box { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); position: sticky; top: 20px; height: fit-content; }
+        .tracker-list { margin-top: 15px; font-size: 0.8rem; max-height: 500px; overflow-y: auto; }
+        .tracker-item { padding: 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .tracker-item.expired { opacity: 0.5; text-decoration: line-through; }
+
+        /* Interactive Elements */
+        .copy-badge { cursor: pointer; background: var(--blue); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; float: right; }
+        .copy-badge:active { transform: scale(0.9); }
+        
+        .voucher-area { border: 2px dashed var(--pink); border-radius: 10px; padding: 12px; background: rgba(244, 63, 94, 0.03); margin-top: 15px; }
+        .btn-voucher { width: 100%; background: var(--pink); border: none; padding: 10px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 0.8rem; margin-top: 10px; transition: 0.2s; }
+        .btn-voucher:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3); }
+        
+        .timer-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+        .timer-progress { height: 100%; background: var(--pink); transition: width 1s linear; }
+
+        .badge { font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; font-weight: 800; color: white; }
+    </style>
+</head>
+<body data-theme="dark">
+
+<div class="container">
+    <header>
+        <div>
+            <h1 style="margin:0; color:var(--pink); letter-spacing: -1px;">Mariposa NLP <span style="font-weight: 200; font-size: 1rem; color: var(--text);">Pro</span></h1>
+            <p style="margin:0; opacity:0.6; font-size: 0.85rem;">Recovery Management & Multilingual Sentiment Analytics</p>
+        </div>
+        <button class="theme-btn" onclick="toggleTheme()">🌓 Toggle Theme</button>
+    </header>
+
+    <div class="controls">
+        <button class="btn" style="background:var(--pink)" onclick="processBulk()">📥 Bulk Import</button>
+        <button class="btn" style="background:var(--blue)" onclick="exportCSV()">📊 Export CSV</button>
+        <button class="btn" style="background:var(--green)" onclick="share()">🔗 Share Project</button>
+        <button class="btn btn-danger" onclick="wipeHistory()">🗑 Wipe Data</button>
+        <div style="padding:10px; border:1px solid var(--border); border-radius:8px; text-align:center; font-family:monospace; font-size:0.8rem;">
+            ID: <span id="pID" style="color:var(--pink); font-weight: bold;">---</span>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="stats-box">
+            <h3>Painpoint Categories</h3>
+            <div class="stat-row">
+                <div class="stat-unit"><b id="statSkin">0</b><small>Skin</small></div>
+                <div class="stat-unit"><b id="statQuality">0</b><small>Quality</small></div>
+                <div class="stat-unit"><b id="statRidersConduct">0</b><small>Rider</small></div>
+                <div class="stat-unit"><b id="statLogistics">0</b><small>Logistics</small></div>
+            </div>
+        </div>
+        <div class="stats-box">
+            <h3>Sentiment Volume</h3>
+            <div class="stat-row">
+                <div class="stat-unit"><b id="statPos" style="color:var(--green)">0</b><small>Positive</small></div>
+                <div class="stat-unit"><b id="statNeu" style="color:#f1c40f">0</b><small>Neutral</small></div>
+                <div class="stat-unit"><b id="statNeg" style="color:var(--pink)">0</b><small>Negative</small></div>
+            </div>
+        </div>
+        <div class="stats-box">
+            <h3>Active Recoveries</h3>
+            <div class="stat-row">
+                <div class="stat-unit"><b id="statActiveV" style="color:var(--pink)">0</b><small>In-Effect</small></div>
+                <div class="stat-unit"><b id="statExpiredV">0</b><small>Expired</small></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div id="results"></div>
+        
+        <aside class="tracker-box">
+            <h3>Voucher Tracker</h3>
+            <div id="trackerList" class="tracker-list">
+                <p style="opacity: 0.5; font-size: 0.75rem;">No active vouchers generated yet.</p>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>
+    let projectID = init();
+    const EXPIRY_TIME = 24 * 60 * 60 * 1000;
+
+    function init() {
+        const url = new URLSearchParams(window.location.search).get('project');
+        const id = url || localStorage.getItem('m_id') || 'MP-' + Math.random().toString(36).substr(2, 7).toUpperCase();
+        localStorage.setItem('m_id', id);
+        window.history.replaceState({}, '', '?project=' + id);
+        return id;
+    }
+
+    function toggleTheme() {
+        const b = document.body;
+        b.setAttribute('data-theme', b.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    }
+
+    function analyze(text) {
+        let n = text.toLowerCase().trim();
+        const sarcasms = ["charot", "eme", "char", "chos", "joke lang"];
+        let isSarcastic = sarcasms.some(s => n.endsWith(s) || n.includes(s + " "));
+
+        const map = { "mabango":"scent", "mahapdi":"sting", "sulit":"value", "maganda":"good", "budol":"scam", "dasurv":"deserve", "omsim":"exact" };
+        Object.keys(map).forEach(k => n = n.replace(new RegExp(`\\b${k}\\b`, 'g'), map[k]));
+
+        const lex = { "breakout":-5, "cakey":-4, "scam":-5, "effective":3, "sting":-4 };
+        let score = 0;
+        const words = n.split(/\s+/);
+        let neg = false;
+
+        words.forEach(w => {
+            if (['no','not','hindi','di','walang'].includes(w)) { neg = true; return; }
+            let s = lex[w] || (['love','good','best','ganda'].includes(w) ? 2 : (['bad','slow','rude','pangit'].includes(w) ? -2 : 0));
+            score += neg ? s * -1.5 : s;
+            neg = false;
+        });
+
+        if (isSarcastic) score = score > 0 ? -1 : score;
+
+        let cat = "Quality";
+        if (n.match(/rider|driver|attitude|sigaw/)) cat = "Riders' Conduct";
+        else if (n.match(/delivery|shipping|box|tagal|dumating/)) cat = "Logistics";
+        else if (n.match(/skin|face|acne|sting|hapdi|breakout|kati/)) cat = "Skin";
+
+        let sent = score > 1.2 ? "Positive" : (score < -0.8 ? "Negative" : "Neutral");
+
+        const replyMap = {
+            "Negative_Skin": "🚨 We're sorry for the reaction. Please stop use immediately. Use code [CODE] for a medical refund claim.",
+            "Negative_Logistics": "We apologize for the delay. Please use [CODE] for free shipping on your next order.",
+            "Negative_Quality": "We're sorry for the quality issue. Use code [CODE] for a free replacement batch.",
+            "Positive_Quality": "Thank you for the support! ✨ We'd love to feature your review on our page!",
+            "Neutral_Quality": "Thank you for your honest feedback! We're always improving."
+        };
+
+        return { 
+            sent, cat, 
+            reply: replyMap[`${sent}_${cat}`] || replyMap[`${sent}_Quality`] || "Thank you for your feedback!"
+        };
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text);
+        alert("Reply copied to clipboard!");
+    }
+
+    function processBulk() {
+        const input = prompt("Paste sentiments (One per line):");
+        if (!input) return;
+        const history = JSON.parse(localStorage.getItem('db_'+projectID)) || [];
+        input.split('\n').filter(l => l.length > 2).slice(0, 500).forEach(t => {
+            const res = analyze(t);
+            history.push({ id: 'ID-'+Date.now()+Math.random().toString(36).substr(2,4), t, ...res, date: Date.now(), voucher: null, vExpiry: null });
+        });
+        localStorage.setItem('db_'+projectID, JSON.stringify(history));
+        render();
+    }
+
+    function genVoucher(id) {
+        let h = JSON.parse(localStorage.getItem('db_'+projectID)) || [];
+        const idx = h.findIndex(i => i.id === id);
+        if (idx !== -1) {
+            h[idx].voucher = 'RECOV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            h[idx].vExpiry = Date.now() + EXPIRY_TIME;
+            localStorage.setItem('db_'+projectID, JSON.stringify(h));
+            render();
+        }
+    }
+
+    function cancelV(id) {
+        let h = JSON.parse(localStorage.getItem('db_'+projectID)) || [];
+        const idx = h.findIndex(i => i.id === id);
+        if (idx !== -1) {
+            h[idx].voucher = null; h[idx].vExpiry = null;
+            localStorage.setItem('db_'+projectID, JSON.stringify(h));
+            render();
+        }
+    }
+
+    function wipeHistory() {
+        if(confirm("Permanently wipe all project data?")) {
+            localStorage.setItem('db_'+projectID, JSON.stringify([]));
+            render();
+        }
+    }
+
+    function render() {
+        document.getElementById('pID').innerText = projectID;
+        const history = JSON.parse(localStorage.getItem('db_'+projectID)) || [];
+        const container = document.getElementById('results');
+        const tracker = document.getElementById('trackerList');
+        container.innerHTML = ''; tracker.innerHTML = '';
+        
+        let pPoints = { Quality:0, Skin:0, Logistics:0, "Riders' Conduct":0 };
+        let sCount = { Positive:0, Neutral:0, Negative:0 };
+        let vActive = 0, vExpired = 0;
+
+        history.slice().reverse().forEach(item => {
+            pPoints[item.cat]++;
+            sCount[item.sent]++;
+            const isVoucherActive = item.voucher && Date.now() < item.vExpiry;
+            if (item.voucher) isVoucherActive ? vActive++ : vExpired++;
+
+            const color = item.sent === 'Negative' ? 'var(--pink)' : (item.sent === 'Positive' ? 'var(--green)' : '#f1c40f');
+            const finalReply = item.reply.replace('[CODE]', item.voucher || 'RECOVERY_CODE');
+
+            // Voucher HTML
+            let vHTML = '';
+            if (item.voucher) {
+                const isExpired = Date.now() > item.vExpiry;
+                vHTML = `
+                    <div class="voucher-area" style="${isExpired ? 'opacity:0.5; border-color:var(--border)' : ''}">
+                        <div style="display:flex; justify-content:space-between; font-family:monospace; color:var(--pink); font-weight:bold;">
+                            <span>${item.voucher}</span>
+                            <button class="btn" style="padding:2px 6px; background:#64748b; font-size:0.6rem;" onclick="cancelV('${item.id}')">Cancel</button>
+                        </div>
+                        <div id="t-${item.id}" style="font-size:0.65rem; margin-top:5px; color:var(--pink)"></div>
+                        <div class="timer-bar"><div class="timer-progress" id="p-${item.id}"></div></div>
+                    </div>`;
+                
+                tracker.innerHTML += `
+                    <div class="tracker-item ${isExpired ? 'expired' : ''}">
+                        <span>${item.voucher} <small>(${item.cat})</small></span>
+                        <b>${isExpired ? 'EXPIRED' : 'ACTIVE'}</b>
+                    </div>`;
+            } else if (item.sent === 'Negative') {
+                vHTML = `<button class="btn-voucher" onclick="genVoucher('${item.id}')">🎁 Manual Voucher Gen</button>`;
+            }
+
+            container.innerHTML += `
+                <div class="card" style="border-top: 5px solid ${color}">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span class="badge" style="background:${color}">${item.sent}</span>
+                        <button style="background:none; border:none; color:#94a3b8; cursor:pointer;" onclick="deleteI('${item.id}')">×</button>
+                    </div>
+                    <p style="font-size:0.9rem; font-weight:600; margin:0 0 10px 0;">"${item.t}"</p>
+                    <div style="font-size:0.75rem; background:rgba(0,0,0,0.05); padding:8px; border-radius:8px;">
+                        <span class="copy-badge" onclick="copyToClipboard('${finalReply.replace(/'/g, "\\'")}')">COPY REPLY</span>
+                        <b style="color:var(--blue)">SUGGESTION:</b><br>
+                        <i style="opacity:0.8">${finalReply}</i>
+                    </div>
+                    ${vHTML}
+                    <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:0.65rem; opacity:0.5;">
+                        <b>${item.cat.toUpperCase()}</b>
+                        <span>${new Date(item.date).toLocaleDateString()}</span>
+                    </div>
+                </div>`;
+        });
+
+        if (tracker.innerHTML === '') tracker.innerHTML = '<p style="opacity: 0.5; font-size: 0.75rem;">No vouchers active.</p>';
+
+        // Update Stats
+        document.getElementById('statSkin').innerText = pPoints.Skin;
+        document.getElementById('statQuality').innerText = pPoints.Quality;
+        document.getElementById('statRidersConduct').innerText = pPoints["Riders' Conduct"];
+        document.getElementById('statLogistics').innerText = pPoints.Logistics;
+        document.getElementById('statPos').innerText = sCount.Positive;
+        document.getElementById('statNeu').innerText = sCount.Neutral;
+        document.getElementById('statNeg').innerText = sCount.Negative;
+        document.getElementById('statActiveV').innerText = vActive;
+        document.getElementById('statExpiredV').innerText = vExpired;
+    }
+
+    function deleteI(id) {
+        let h = JSON.parse(localStorage.getItem('db_'+projectID)).filter(i => i.id !== id);
+        localStorage.setItem('db_'+projectID, JSON.stringify(h));
+        render();
+    }
+
+    function updateTimers() {
+        const history = JSON.parse(localStorage.getItem('db_'+projectID)) || [];
+        history.forEach(item => {
+            if (item.voucher && item.vExpiry) {
+                const diff = item.vExpiry - Date.now();
+                const timerEl = document.getElementById('t-' + item.id);
+                const progressEl = document.getElementById('p-' + item.id);
+                
+                if (diff > 0 && timerEl) {
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    timerEl.innerText = `Expires in: ${h}h ${m}m ${s}s`;
+                    progressEl.style.width = (diff / EXPIRY_TIME * 100) + '%';
+                } else if (timerEl) {
+                    timerEl.innerText = "EXPIRED";
+                    progressEl.style.width = '0%';
+                }
+            }
+        });
+    }
+
+    setInterval(updateTimers, 1000);
+    window.onload = render;
+</script>
+</body>
+</html>
 
