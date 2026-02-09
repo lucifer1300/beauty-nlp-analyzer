@@ -1,1 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mariposa NLP Pro | Enterprise v4.5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --subtext: #64748b;
+            --pink: #f43f5e; --blue: #3b82f6; --green: #10b981; --orange: #f59e0b;
+            --purple: #8b5cf6; --red: #dc2626; --border: #e2e8f0; 
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1); --radius: 12px;
+            --bar-bg: #e2e8f0;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --subtext: #94a3b8;
+            --border: #334155; --shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+            --bar-bg: #334155;
+        }
+        
+        * { box-sizing: border-box; outline: none; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; transition: 0.3s; line-height: 1.5; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        /* Header & Org */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        .brand h1 { margin: 0; font-weight: 800; color: var(--pink); font-size: 1.5rem; letter-spacing: -0.5px; }
+        .org-badge { font-size: 0.75rem; background: var(--bg); padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; margin-top: 5px; display: inline-block; }
+
+        /* Dashboard Overview */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--card); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .stat-label { font-size: 0.75rem; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .stat-num { font-size: 2rem; font-weight: 800; margin-top: 5px; line-height: 1; }
+        .stat-sub { font-size: 0.8rem; margin-top: 5px; opacity: 0.8; }
+
+        /* Painpoint Distribution Chart */
+        .chart-container { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; }
+        .chart-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 15px; color: var(--text); }
+        .bar-group { display: flex; flex-direction: column; gap: 10px; }
+        .bar-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+        .bar-label { width: 100px; text-align: right; color: var(--subtext); }
+        .bar-track { flex: 1; background: var(--bar-bg); height: 8px; border-radius: 99px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+        .bar-val { width: 40px; font-weight: 700; font-size: 0.8rem; }
+
+        /* Controls */
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; background: var(--card); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); }
+        .btn { border: none; padding: 10px 18px; border-radius: 8px; color: white; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: var(--shadow); }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-pink { background: var(--pink); } .btn-blue { background: var(--blue); }
+        .btn-green { background: var(--green); } .btn-red { background: var(--red); }
+        .btn-purple { background: var(--purple); } .btn-gray { background: var(--subtext); }
+
+        .input-search { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); min-width: 200px; }
+        
+        /* Main Results Grid */
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+        
+        .card { 
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); 
+            padding: 20px; position: relative; display: flex; flex-direction: column; gap: 12px;
+            transition: all 0.2s ease; border-left: 4px solid transparent;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .id-pill { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: var(--bg); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--subtext); }
+        
+        .tags { display: flex; gap: 5px; flex-wrap: wrap; }
+        .tag { font-size: 0.65rem; padding: 3px 8px; border-radius: 99px; font-weight: 800; text-transform: uppercase; border: 1px solid transparent; }
+        .tag-risk-high { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+        .tag-risk-mid { background: #ffedd5; color: #c2410c; border-color: #fdba74; }
+        .tag-risk-low { background: #ecfccb; color: #3f6212; border-color: #bef264; }
+        
+        .text-body { font-size: 0.95rem; line-height: 1.5; color: var(--text); }
+        .text-trans { font-size: 0.85rem; color: var(--subtext); font-style: italic; border-left: 2px solid var(--border); padding-left: 10px; }
+
+        .clinical-alert { background: rgba(220, 38, 38, 0.05); border: 1px solid rgba(220, 38, 38, 0.2); padding: 10px; border-radius: 8px; display: flex; gap: 10px; align-items: flex-start; }
+        .clinical-alert svg { flex-shrink: 0; width: 16px; height: 16px; color: var(--red); margin-top: 2px; }
+        .clinical-text { font-size: 0.8rem; color: var(--red); font-weight: 600; }
+
+        .response-box { background: var(--bg); padding: 10px; border-radius: 8px; font-size: 0.85rem; border: 1px solid var(--border); }
+        .response-label { font-size: 0.7rem; color: var(--blue); font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 5px; }
+
+        /* AI Trainer */
+        .trainer { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: none; }
+        .trainer.active { display: block; animation: fadeDown 0.3s ease; }
+        .trainer-row { display: flex; gap: 5px; margin-bottom: 5px; }
+        .trainer-select { flex: 1; padding: 5px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.8rem; }
+
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        #fileInput { display: none; }
+        
+        /* EXPANDED MODAL DESIGN */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index: 1000; backdrop-filter: blur(2px); }
+        .modal-content { background: var(--card); padding: 30px; border-radius: var(--radius); max-width: 800px; width: 95%; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; flex-direction: column; height: 80vh; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .modal-body { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .large-textarea { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; resize: none; line-height: 1.6; }
+        .large-textarea:focus { border-color: var(--pink); }
+
+    </style>
+</head>
+<body data-theme="dark">
+
+<div class="container">
+    <header>
+        <div class="brand">
+            <h1>Mariposa NLP <span>Pro</span></h1>
+            <div class="org-badge" id="orgNameDisplay" contenteditable="true" onblur="saveOrgName()">My Organization</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <div class="org-badge">🧠 Brain v4.5: <span id="brainSize">0</span> Patterns</div>
+            <button class="btn btn-sm btn-gray" onclick="toggleTheme()">🌓 Theme</button>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="stat-card" style="border-bottom: 4px solid var(--red);">
+            <div class="stat-label">Critical Risks</div>
+            <div class="stat-num" id="stat_high" style="color:var(--red)">0</div>
+            <div class="stat-sub">Immediate Action Required</div>
+        </div>
+        <div class="stat-card" style="border-bottom: 4px solid var(--pink);">
+            <div class="stat-label">Skin Reactions</div>
+            <div class="stat-num" id="stat_skin" style="color:var(--pink)">0</div>
+            <div class="stat-sub">Clinical Protocol Active</div>
+        </div>
+        <div class="stat-card" style="border-bottom: 4px solid var(--green);">
+            <div class="stat-label">Conversion Ops</div>
+            <div class="stat-num" id="stat_opps" style="color:var(--green)">0</div>
+            <div class="stat-sub">Recoverable Negative Sentiment</div>
+        </div>
+        <div class="stat-card" style="border-bottom: 4px solid var(--blue);">
+            <div class="stat-label">Total Volume</div>
+            <div class="stat-num" id="stat_total">0</div>
+            <div class="stat-sub">Records Analyzed</div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-title">📊 Painpoint Category Distribution</div>
+        <div class="bar-group" id="chart-bars">
+            </div>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="searchInput" class="input-search" placeholder="Search ID, text, or category..." oninput="render()">
+        
+        <button class="btn btn-pink" onclick="openImportModal()">📥 Import & Paste Reviews (Expanded)</button>
+        <button class="btn btn-green" onclick="exportExcel()">📈 Export Excel</button>
+        
+        <div style="width: 1px; background: var(--border); margin: 0 5px;"></div>
+        
+        <button class="btn btn-purple" onclick="preTrainBrain()">🚀 Pre-Train Brain</button>
+        <button class="btn btn-purple" onclick="downloadBrain()">💾 Backup Brain</button>
+        <button class="btn btn-purple" onclick="document.getElementById('fileInput').click()">📂 Load Brain</button>
+        <input type="file" id="fileInput" accept=".json" onchange="loadBrain(this)">
+        
+        <div style="flex:1"></div>
+        <button class="btn btn-red" onclick="wipeAll()">🗑 Reset All</button>
+    </div>
+
+    <div id="resultsArea" class="results-grid"></div>
+
+</div>
+
+<div id="importModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 style="margin:0">Import Bulk Sentiments</h3>
+            <button class="btn btn-sm btn-gray" onclick="document.getElementById('importModal').style.display='none'">✖ Close</button>
+        </div>
+        <div class="modal-body">
+            <p style="color:var(--subtext); font-size:0.9rem; margin:0;">
+                Paste reviews below (one per line). The expanded engine will detect Taglish, Clinical Risks, and Sarcasm automatically.
+            </p>
+            <textarea id="importText" class="large-textarea" placeholder="Example:
+Ang ganda super hiyang ako!
+Mahapdi sa mukha grabe stop ko na.
+The item is fake, iba ang amoy.
+Rider was rude and late delivery.
+..."></textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center">
+                <span id="charCount" style="color:var(--subtext); font-size:0.8rem;">0 chars</span>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-gray" onclick="document.getElementById('importText').value=''">Clear</button>
+                    <button class="btn btn-pink" onclick="runImport()">⚡ Analyze & Import</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * MARIPOSA NLP ENGINE v4.5
+ * Features: Expanded "Taglish" Lexicon, Hiyang/Incompatibility Logic, Priority Risk Detection
+ */
+
+// --- CONFIG & STATE ---
+const STORE_KEY = "MP_DATA_V4";
+const BRAIN_KEY = "MP_BRAIN_V4";
+const ORG_KEY = "MP_ORG_NAME";
+
+let db = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
+let orgName = localStorage.getItem(ORG_KEY) || "My Organization";
+
+// --- EXPANDED LEXICON v2.0 (The "Better Dictionary") ---
+const LEXICON = {
+    // Negation Logic (Expanded)
+    negators: ['hindi', 'di', 'ayaw', 'wala', 'not', 'never', 'wag', 'huwag', 'dont', 'no', 'stop', 'tigil'],
+    
+    // Intensifiers (Boosts score)
+    intensifiers: ['sobra', 'grabe', 'super', 'napaka', 'very', 'too', 'extreme'],
+
+    // Clinical Triggers (High Priority)
+    clinical: {
+        // High Risk (Medical/Emergency)
+        'pumutok': { cat:'Skin', risk:'High', advice:'Clean wound immediately. Do not apply product.', en:'burst/bleeding' },
+        'sugat': { cat:'Skin', risk:'High', advice:'Do not use on open wounds.', en:'wound' },
+        'namaga': { cat:'Skin', risk:'High', advice:'Cold compress immediately. Take antihistamine.', en:'swollen' },
+        'swollen': { cat:'Skin', risk:'High', advice:'Cold compress immediately.', en:'swollen' },
+        'burn': { cat:'Skin', risk:'High', advice:'Treat as chemical burn. Seek help.', en:'chemical burn' },
+        'blister': { cat:'Skin', risk:'High', advice:'Do not pop blisters. Stop use.', en:'blister' },
+        'pantal': { cat:'Skin', risk:'High', advice:'Possible allergic reaction. Monitor breathing.', en:'hives/rash' },
+        'an-an': { cat:'Skin', risk:'Mid', advice:'Consult dermatologist for fungal treatment.', en:'fungal infection' },
+        
+        // Mid Risk (Irritation/Discomfort)
+        'mahapdi': { cat:'Skin', risk:'Mid', advice:'Stop use. Rinse with cool water.', en:'stinging' },
+        'hapdi': { cat:'Skin', risk:'Mid', advice:'Stop use. Rinse with cool water.', en:'sting' },
+        'kati': { cat:'Skin', risk:'Mid', advice:'Avoid scratching. Apply moisturizer.', en:'itchy' },
+        'nangati': { cat:'Skin', risk:'Mid', advice:'Avoid scratching.', en:'itched' },
+        'makati': { cat:'Skin', risk:'Mid', advice:'Avoid scratching.', en:'itchy' },
+        'pimples': { cat:'Skin', risk:'Mid', advice:'Pause use. Let skin rest.', en:'pimples' },
+        'breakout': { cat:'Skin', risk:'Mid', advice:'Pause use. Check for purging vs reaction.', en:'breakout' },
+        'butlig': { cat:'Skin', risk:'Mid', advice:'Observe if allergic reaction.', en:'bumps/rash' },
+        'redness': { cat:'Skin', risk:'Mid', advice:'Monitor for 24 hours.', en:'redness' },
+        'namumula': { cat:'Skin', risk:'Mid', advice:'Monitor for 24 hours.', en:'redness' },
+        'init': { cat:'Skin', risk:'Low', advice:'Slight heating is normal, stop if painful.', en:'hot sensation' },
+        'dry': { cat:'Skin', risk:'Low', advice:'Apply extra moisturizer.', en:'dryness' }
+    },
+    
+    // Non-Clinical Categories
+    logistics: {
+        'tagal': 'Logistics', 'bagal': 'Logistics', 'yupi': 'Logistics', 'spill': 'Logistics',
+        'tapon': 'Logistics', 'late': 'Logistics', 'courier': 'Logistics', 'rider': 'Rider',
+        'basag': 'Logistics', 'durog': 'Logistics', 'leak': 'Logistics', 'bukas': 'Logistics',
+        'damaged': 'Logistics', 'missing': 'Logistics', 'kulang': 'Logistics', 'wrong': 'Logistics'
+    },
+    
+    quality: {
+        // Negative Quality
+        'fake': { cat:'Quality', sent:'Negative' }, 
+        'scam': { cat:'Quality', sent:'Negative' }, 
+        'amoy': { cat:'Quality', sent:'Neutral' }, // Context dependent
+        'baho': { cat:'Quality', sent:'Negative' },
+        'expired': { cat:'Quality', sent:'Negative' },
+        'iba': { cat:'Quality', sent:'Negative' }, // "Iba yung texture"
+        'sticky': { cat:'Quality', sent:'Negative' },
+        'labnaw': { cat:'Quality', sent:'Negative' },
+
+        // Positive Quality
+        'effective': { cat:'Quality', sent:'Positive' }, 
+        'ganda': { cat:'Quality', sent:'Positive' }, 
+        'smooth': { cat:'Quality', sent:'Positive' }, 
+        'love': { cat:'Quality', sent:'Positive' },
+        'hiyang': { cat:'Quality', sent:'Positive' }, // "Hiyang" = Compatible (High Praise)
+        'lambot': { cat:'Quality', sent:'Positive' },
+        'kinis': { cat:'Quality', sent:'Positive' },
+        'bango': { cat:'Quality', sent:'Positive' },
+        'mabango': { cat:'Quality', sent:'Positive' },
+        'legit': { cat:'Quality', sent:'Positive' },
+        'authentic': { cat:'Quality', sent:'Positive' },
+        'bilis': { cat:'Logistics', sent:'Positive' } // Fast delivery
+    }
+};
+
+// --- BAYESIAN BRAIN CLASS ---
+class Brain {
+    constructor() {
+        this.vocab = {};
+        this.counts = { pos:0, neg:0, neu:0 };
+        this.load();
+    }
+
+    train(text, label) {
+        const tokens = this.tokenize(text);
+        tokens.forEach(t => {
+            if(!this.vocab[t]) this.vocab[t] = { pos:0, neg:0, neu:0 };
+            this.vocab[t][label]++;
+        });
+        this.counts[label]++;
+        this.save();
+    }
+
+    predict(text) {
+        const tokens = this.tokenize(text);
+        let scores = { pos: 0, neg: 0, neu: 0 };
+        
+        tokens.forEach(t => {
+            if(this.vocab[t]) {
+                // Add weighted probabilities
+                scores.pos += Math.log((this.vocab[t].pos + 1) / (this.counts.pos + 100));
+                scores.neg += Math.log((this.vocab[t].neg + 1) / (this.counts.neg + 100));
+                scores.neu += Math.log((this.vocab[t].neu + 1) / (this.counts.neu + 100));
+            }
+        });
+
+        // Return label with highest score
+        if(scores.pos > scores.neg && scores.pos > scores.neu) return 'Positive';
+        if(scores.neg > scores.pos && scores.neg > scores.neu) return 'Negative';
+        return 'Neutral';
+    }
+
+    tokenize(text) {
+        return text.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/).filter(w => w.length > 2);
+    }
+
+    save() { localStorage.setItem(BRAIN_KEY, JSON.stringify({vocab: this.vocab, counts: this.counts})); updateStats(); }
+    load() { 
+        const d = JSON.parse(localStorage.getItem(BRAIN_KEY));
+        if(d) { this.vocab = d.vocab; this.counts = d.counts; }
+    }
+}
+const ai = new Brain();
+
+// --- CORE ANALYZER ---
+function generateID(text) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+        const char = text.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return 'ID-' + Math.abs(hash).toString(16).toUpperCase().substring(0, 6);
+}
+
+function analyze(text) {
+    let clean = text.toLowerCase();
+    let words = clean.split(/[\s.,!?]+/);
+    
+    // 1. Initial AI Guess
+    let sentiment = ai.predict(text);
+    let category = 'Quality'; // Default
+    let risk = 'Low';
+    let advice = null;
+    let transTerms = [];
+
+    // 2. Keyword Scanner with Contextual Negation & Intensifiers
+    let score = 0;
+    
+    for(let i=0; i<words.length; i++) {
+        let w = words[i];
+        let prev = i > 0 ? words[i-1] : "";
+        
+        let isNegated = LEXICON.negators.includes(prev);
+        let isIntense = LEXICON.intensifiers.includes(prev);
+        
+        let multiplier = 1;
+        if(isNegated) multiplier = -1;
+        if(isIntense) multiplier *= 2;
+
+        // Clinical Check (Highest Priority)
+        // Fuzzy match: check if word contains key (e.g., "mahapdi" matches "hapdi")
+        let clinicalKey = Object.keys(LEXICON.clinical).find(k => w.includes(k));
+        if(clinicalKey) {
+            let info = LEXICON.clinical[clinicalKey];
+            transTerms.push((isNegated ? "not ":"") + info.en);
+            
+            if(!isNegated) {
+                category = 'Skin';
+                score -= 5; // Heavy negative
+                
+                // Risk Logic
+                if(info.risk === 'High') risk = 'High';
+                else if(info.risk === 'Mid' && risk !== 'High') risk = 'Mid';
+                
+                advice = info.advice;
+            } else {
+                // "Hindi mahapdi" = Good (Safe)
+                score += 2; 
+            }
+        }
+        
+        // Logistics Check
+        if(LEXICON.logistics[w]) {
+            category = LEXICON.logistics[w];
+            transTerms.push(w);
+            score -= (isNegated ? -1 : 2);
+        }
+        
+        // Quality Check
+        if(LEXICON.quality[w]) {
+            let info = LEXICON.quality[w];
+            transTerms.push(w);
+            let val = info.sent === 'Positive' ? 2 : -2;
+            
+            // Special Logic: "Fake" is very bad
+            if(w === 'fake' || w === 'scam') val = -5;
+            // Special Logic: "Hiyang" is very good
+            if(w === 'hiyang') val = 4;
+            
+            score += (val * multiplier);
+            
+            // Capture category override
+            if(info.cat) category = info.cat;
+        }
+    }
+
+    // 3. Final Sentiment Logic (Merge AI & Keywords)
+    if(score > 0) sentiment = 'Positive';
+    else if(score < -1) sentiment = 'Negative';
+    // If score is neutral but AI is very confident, use AI (handles sarcasm sometimes)
+    
+    // 4. THE LOGIC GATE
+    // "Do not activate clinical advice if sentiment is positive"
+    if(sentiment === 'Positive') {
+        advice = null;
+        risk = 'Low';
+        if(category === 'Skin') category = 'Quality'; 
+    }
+
+    // 5. Dynamic Strategy Generation
+    let reply = "";
+    if(sentiment === 'Positive') {
+        reply = "Response: Thank the customer for the glowing feedback! Request UGC/Photo.";
+        if(text.includes('hiyang')) reply += " (Highlight 'Hiyang' compatibility in marketing)";
+    } else if (category === 'Skin') {
+        reply = risk === 'High' 
+            ? `CRITICAL: Stop use. ${advice} Issue Medical Refund Code immediately.` 
+            : `Support: We are sorry. ${advice || 'Let skin rest.'} Guide on proper usage frequency.`;
+    } else if (category === 'Logistics') {
+        reply = "Support: Apologize for delay. Coordinate with courier hub.";
+    } else if (category === 'Quality') {
+         if(text.includes('fake')) reply = "Escalate: Request photos of batch number. Verify authenticity.";
+         else reply = "Support: Offer troubleshooting or replacement/refund if defect is proven.";
+    } else {
+        reply = "Support: General Inquiry response.";
+    }
+
+    return {
+        id: generateID(text),
+        text: text,
+        trans: transTerms.join(", "),
+        sent: sentiment,
+        cat: category,
+        risk: risk,
+        advice: advice,
+        reply: reply,
+        date: new Date().toLocaleDateString()
+    };
+}
+
+// --- UI & DATA FUNCTIONS ---
+function runImport() {
+    const raw = document.getElementById('importText').value;
+    if(!raw.trim()) return;
+    
+    const lines = raw.split('\n').filter(l => l.trim().length > 0);
+    let count = 0;
+    
+    lines.forEach(line => {
+        // Check if exists to maintain permanent ID logic
+        const tempId = generateID(line);
+        if(!db.find(x => x.id === tempId)) {
+            db.push(analyze(line));
+            count++;
+        }
+    });
+    
+    save();
+    document.getElementById('importModal').style.display = 'none';
+    document.getElementById('importText').value = '';
+    alert(`Successfully analyzed and imported ${count} new records.`);
+}
+
+// Character counter for the expanded box
+document.getElementById('importText').addEventListener('input', function() {
+    document.getElementById('charCount').innerText = this.value.length + " chars";
+});
+
+function render() {
+    const container = document.getElementById('resultsArea');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    container.innerHTML = '';
+    
+    let stats = { high:0, skin:0, total:0, opps:0, cat:{Skin:0, Quality:0, Logistics:0, Rider:0} };
+
+    db.slice().reverse().forEach(item => {
+        // Stats Calculation
+        stats.total++;
+        if(item.risk === 'High') stats.high++;
+        if(item.cat === 'Skin' && item.sent === 'Negative') stats.skin++;
+        if(item.sent === 'Negative' && item.risk !== 'High') stats.opps++; // Recoverable
+        if(stats.cat[item.cat] !== undefined) stats.cat[item.cat]++;
+
+        // Search Filter
+        if(search && !item.text.toLowerCase().includes(search) && !item.id.toLowerCase().includes(search) && !item.cat.toLowerCase().includes(search)) return;
+
+        // Card Render
+        let border = item.risk === 'High' ? 'var(--red)' : (item.sent==='Positive'?'var(--green)':'var(--border)');
+        let riskBadge = item.risk !== 'Low' ? `<span class="tag tag-risk-${item.risk.toLowerCase()}">${item.risk} Risk</span>` : '';
+        
+        let clinicalHTML = item.advice ? `
+            <div class="clinical-alert">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <div>
+                    <div class="clinical-text">CLINICAL PROTOCOL ACTIVE</div>
+                    <div style="font-size:0.8rem">${item.advice}</div>
+                </div>
+            </div>` : '';
+
+        container.innerHTML += `
+        <div class="card" style="border-left-color: ${border}">
+            <div class="card-header">
+                <div class="id-pill">#${item.id}</div>
+                <div class="tags">
+                    <span class="tag" style="background:${item.cat==='Skin'?'#fce7f3':'#e2e8f0'}">${item.cat}</span>
+                    <span class="tag" style="background:${item.sent==='Positive'?'#dcfce7':(item.sent==='Negative'?'#fee2e2':'#f1f5f9')}">${item.sent}</span>
+                    ${riskBadge}
+                </div>
+            </div>
+            
+            <div class="text-body">"${item.text}"</div>
+            <div class="text-trans">Detected: ${item.trans || 'None'}</div>
+            
+            ${clinicalHTML}
+
+            <div class="response-box">
+                <span class="response-label">System Strategy:</span>
+                ${item.reply}
+            </div>
+
+            <button class="btn btn-sm btn-gray" style="margin-top:auto" onclick="toggleTrain('${item.id}')">🎓 Correct/Teach AI</button>
+            <div id="train-${item.id}" class="trainer">
+                <div class="trainer-row">
+                    <select id="t-sent-${item.id}" class="trainer-select">
+                        <option value="Positive">Positive</option><option value="Negative">Negative</option><option value="Neutral">Neutral</option>
+                    </select>
+                    <select id="t-cat-${item.id}" class="trainer-select">
+                        <option value="Skin">Skin</option><option value="Quality">Quality</option><option value="Logistics">Logistics</option>
+                    </select>
+                    <button class="btn btn-sm btn-purple" onclick="doTrain('${item.id}')">Save</button>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    // Update Dashboard
+    document.getElementById('stat_high').innerText = stats.high;
+    document.getElementById('stat_skin').innerText = stats.skin;
+    document.getElementById('stat_opps').innerText = stats.opps;
+    document.getElementById('stat_total').innerText = stats.total;
+
+    // Render Charts
+    const chart = document.getElementById('chart-bars');
+    chart.innerHTML = '';
+    let max = Math.max(...Object.values(stats.cat), 1);
+    
+    Object.keys(stats.cat).forEach(key => {
+        let val = stats.cat[key];
+        let pct = (val / max) * 100;
+        let color = key==='Skin'?'var(--pink)':(key==='Logistics'?'var(--blue)':'var(--orange)');
+        chart.innerHTML += `
+        <div class="bar-row">
+            <div class="bar-label">${key}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color}"></div></div>
+            <div class="bar-val">${val}</div>
+        </div>`;
+    });
+}
+
+// --- DATA PERSISTENCE ---
+function save() {
+    localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    render();
+}
+
+function saveOrgName() {
+    const name = document.getElementById('orgNameDisplay').innerText;
+    localStorage.setItem(ORG_KEY, name);
+}
+document.getElementById('orgNameDisplay').innerText = orgName;
+
+function wipeAll() {
+    if(confirm("Are you sure? This deletes all records.")) {
+        db = []; save();
+    }
+}
+
+// --- EXPORT TO EXCEL ---
+function exportExcel() {
+    let csv = "\uFEFFID,Date,Original Text,Detected Terms,Sentiment,Category,Risk Level,Clinical Advice,Recommended Action\n";
+    db.forEach(row => {
+        let safeText = row.text.replace(/"/g, '""');
+        let safeReply = row.reply.replace(/"/g, '""');
+        csv += `${row.id},${row.date},"${safeText}","${row.trans}",${row.sent},${row.cat},${row.risk},"${row.advice||''}","${safeReply}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Mariposa_Report_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+}
+
+// --- AI TRAINING ---
+function toggleTrain(id) {
+    const el = document.getElementById(`train-${id}`);
+    el.classList.toggle('active');
+}
+
+function doTrain(id) {
+    const item = db.find(x => x.id === id);
+    const sent = document.getElementById(`t-sent-${id}`).value;
+    const cat = document.getElementById(`t-cat-${id}`).value;
+    ai.train(item.text, sent);
+    item.sent = sent;
+    item.cat = cat;
+    if(sent === 'Positive') { item.risk = 'Low'; item.advice = null; }
+    save();
+    alert("Brain updated! AI will recognize this pattern better next time.");
+}
+
+function preTrainBrain() {
+    const basics = [
+        ['effective smooth ganda', 'Positive'], ['love result', 'Positive'], ['bango mabango', 'Positive'],
+        ['mahapdi masakit', 'Negative'], ['kati itchy red', 'Negative'], ['fake scam', 'Negative'],
+        ['tagal dumating', 'Negative'], ['yupi damaged', 'Negative'], ['hiyang ako', 'Positive']
+    ];
+    basics.forEach(b => ai.train(b[0], b[1]));
+    alert("Brain Pre-Trained with Basic Concepts!");
+    updateStats();
+}
+
+function downloadBrain() {
+    const data = JSON.stringify({vocab: ai.vocab, counts: ai.counts});
+    const blob = new Blob([data], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "Mariposa_Brain_v4.json";
+    a.click();
+}
+
+function loadBrain(input) {
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        localStorage.setItem(BRAIN_KEY, e.target.result);
+        ai.load();
+        alert("Brain successfully loaded.");
+        location.reload();
+    };
+    reader.readAsText(file);
+}
+
+function updateStats() {
+    document.getElementById('brainSize').innerText = Object.keys(ai.vocab).length;
+}
+
+function openImportModal() { document.getElementById('importModal').style.display='flex'; }
+function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark'?'light':'dark'); }
+
+// Init
+render();
+updateStats();
+
+</script>
+</body>
+</html>
 
