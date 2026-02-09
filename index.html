@@ -1,1 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mariposa NLP Pro | Strategic Recovery Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f1f5f9; 
+            --card: #ffffff; 
+            --text: #0f172a; 
+            --subtext: #64748b;
+            --pink: #ec4899;
+            --blue: #3b82f6; 
+            --green: #10b981; 
+            --orange: #f59e0b;
+            --border: #e2e8f0; 
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius: 12px;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --text: #f1f5f9; 
+            --subtext: #94a3b8;
+            --border: #334155; 
+            --shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+        }
+        
+        * { box-sizing: border-box; outline: none; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; transition: background 0.3s, color 0.3s; line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        /* Header */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        h1 { margin: 0; font-weight: 800; letter-spacing: -0.05em; color: var(--pink); font-size: 1.8rem; }
+        h1 span { color: var(--text); font-weight: 300; opacity: 0.8; }
+        
+        /* Buttons */
+        button { cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        .theme-btn { padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-weight: 600; font-size: 0.85rem; }
+        
+        .btn { border: none; padding: 10px 16px; border-radius: var(--radius); color: white; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn:hover { opacity: 0.9; }
+        .btn-pink { background: var(--pink); }
+        .btn-blue { background: var(--blue); }
+        .btn-green { background: var(--green); }
+        .btn-gray { background: var(--subtext); }
+        .btn-danger { background: #ef4444; }
+
+        /* Controls Area */
+        .controls-wrapper { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
+        
+        .search-bar { 
+            background: var(--card); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); 
+            display: flex; gap: 10px; flex-wrap: wrap; box-shadow: var(--shadow);
+        }
+        .input-field { flex: 1; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; }
+        
+        .action-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* Dashboard Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .stat-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--subtext); letter-spacing: 0.05em; margin-bottom: 15px; }
+        
+        .stat-flex { display: flex; justify-content: space-between; text-align: center; }
+        .stat-item b { display: block; font-size: 1.5rem; line-height: 1; margin-bottom: 5px; }
+        .stat-item span { font-size: 0.7rem; color: var(--subtext); font-weight: 600; }
+
+        /* Main Content Layout */
+        .main-layout { display: grid; grid-template-columns: 1fr 320px; gap: 25px; align-items: start; }
+        @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
+
+        /* Results Grid */
+        #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .result-card { 
+            background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); 
+            box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative; overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .result-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; }
+        .badge-cat { background: var(--bg); color: var(--subtext); border: 1px solid var(--border); margin-right: 5px; }
+        
+        .comment-text { font-size: 0.95rem; font-weight: 500; margin: 0 0 15px 0; font-style: italic; color: var(--text); }
+        
+        .strategy-box { background: rgba(59, 130, 246, 0.05); border-left: 3px solid var(--blue); padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 10px; }
+        .strategy-title { color: var(--blue); font-weight: 800; font-size: 0.7rem; text-transform: uppercase; display: block; margin-bottom: 4px; }
+
+        .reply-box { background: var(--bg); padding: 10px; border-radius: 8px; font-size: 0.8rem; border: 1px solid var(--border); position: relative; }
+        .copy-btn { position: absolute; right: 5px; top: 5px; background: var(--text); color: var(--bg); border: none; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; cursor: pointer; }
+
+        /* Voucher System */
+        .voucher-section { margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px; }
+        .voucher-active { background: rgba(236, 72, 153, 0.05); border: 1px solid var(--pink); border-radius: 8px; padding: 10px; text-align: center; }
+        .voucher-code { font-family: 'Courier New', monospace; font-weight: 800; color: var(--pink); font-size: 1.1rem; letter-spacing: 2px; display: block; margin: 5px 0; }
+        .timer-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+        .timer-fill { height: 100%; background: var(--pink); width: 100%; transition: width 1s linear; }
+
+        /* Sidebar Tracker */
+        .tracker-sidebar { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); position: sticky; top: 20px; max-height: 85vh; display: flex; flex-direction: column; }
+        .tracker-list { flex: 1; overflow-y: auto; margin-top: 15px; padding-right: 5px; }
+        .tracker-item { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; }
+        .tracker-item:last-child { border-bottom: none; }
+        .tracker-item small { color: var(--subtext); font-size: 0.7rem; }
+        
+        /* Utility */
+        .hidden { display: none; }
+        .delete-btn { opacity: 0.4; background: none; border: none; font-size: 1.2rem; color: var(--text); padding: 0; line-height: 1; }
+        .delete-btn:hover { opacity: 1; color: var(--pink); }
+
+    </style>
+</head>
+<body data-theme="dark">
+
+<div class="container">
+    <header>
+        <div>
+            <h1>Mariposa NLP <span>Pro</span></h1>
+            <p style="margin:0; color:var(--subtext); font-size: 0.9rem;">Automated Sentiment Analysis & Strategic Recovery System</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:15px;">
+             <span style="font-family:monospace; font-size:0.75rem; color:var(--subtext);">ID: <span id="projectIDDisplay">---</span></span>
+            <button class="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
+        </div>
+    </header>
+
+    <div class="controls-wrapper">
+        <div class="search-bar">
+            <input type="text" id="searchInput" class="input-field" placeholder="Search comments, keywords, or voucher codes..." oninput="render()">
+            <select id="catFilter" class="input-field" style="width:150px;" onchange="render()">
+                <option value="All">All Categories</option>
+                <option value="Skin Reaction">Skin Reaction</option>
+                <option value="Quality">Product Quality</option>
+                <option value="Logistics">Logistics/Shipping</option>
+                <option value="Rider">Rider Conduct</option>
+            </select>
+            <select id="sentFilter" class="input-field" style="width:150px;" onchange="render()">
+                <option value="All">All Sentiments</option>
+                <option value="Negative">Negative Only</option>
+                <option value="Positive">Positive Only</option>
+                <option value="Neutral">Neutral</option>
+            </select>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-pink" onclick="importData()">📥 Bulk Import</button>
+            <button class="btn btn-blue" onclick="exportData()">📊 Export CSV</button>
+            <button class="btn btn-green" onclick="shareProject()">🔗 Share ID</button>
+            <div style="flex:1"></div>
+            <button class="btn btn-danger" onclick="wipeData()">🗑 Reset Project</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Pain Points</div>
+            <div class="stat-flex">
+                <div class="stat-item"><b id="s_skin" style="color:var(--pink)">0</b><span>Skin</span></div>
+                <div class="stat-item"><b id="s_quality" style="color:var(--orange)">0</b><span>Quality</span></div>
+                <div class="stat-item"><b id="s_logistics" style="color:var(--blue)">0</b><span>Logistic</span></div>
+                <div class="stat-item"><b id="s_rider" style="color:var(--text)">0</b><span>Rider</span></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Sentiment Pulse</div>
+            <div class="stat-flex">
+                <div class="stat-item"><b id="s_pos" style="color:var(--green)">0</b><span>Positive</span></div>
+                <div class="stat-item"><b id="s_neu" style="color:var(--orange)">0</b><span>Neutral</span></div>
+                <div class="stat-item"><b id="s_neg" style="color:var(--pink)">0</b><span>Negative</span></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Recovery Vouchers</div>
+            <div class="stat-flex">
+                <div class="stat-item"><b id="s_v_active" style="color:var(--green)">0</b><span>Active</span></div>
+                <div class="stat-item"><b id="s_v_exp" style="color:var(--subtext)">0</b><span>Expired</span></div>
+                <div class="stat-item"><b id="s_v_total">0</b><span>Total</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div id="results">
+            </div>
+
+        <aside class="tracker-sidebar">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; font-size:0.9rem;">Active Vouchers</h3>
+                <span class="badge badge-cat" id="trackerCount">0</span>
+            </div>
+            <div id="trackerList" class="tracker-list">
+                <p style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top:20px;">No active recovery strategies.</p>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>
+    // --- Configuration & State ---
+    const APP_ID = 'MARIPOSA_PRO_DB_';
+    const EXPIRY_HOURS = 24;
+    let currentProject = '';
+
+    // --- NLP Dictionary (Taglish + PH Context) ---
+    const LEXICON = {
+        // Intensifiers (Multiplier x1.5)
+        intensifiers: ['sobra', 'grabe', 'super', 'napaka', 'too', 'very', 'lala', 'todo'],
+        // Negators (Multiplier -1)
+        negators: ['hindi', 'di', 'not', 'no', 'wala', 'walang', 'never', 'don\'t'],
+        // Context Flippers (Changes sentence flow)
+        flippers: ['kaso', 'pero', 'but', 'however', 'sayang', 'although', 'kahit'],
+        // Scoring (-5 to +5)
+        words: {
+            'love': 3, 'ganda': 3, 'effective': 4, 'bilis': 3, 'mabango': 2, 'smooth': 2,
+            'glow': 3, 'best': 3, 'wow': 3, 'sulit': 4, 'okay': 1, 'ok': 1, 'goods': 2,
+            'bad': -3, 'pangit': -3, 'fake': -5, 'peke': -5, 'scam': -5, 'kati': -4,
+            'hapdi': -4, 'sting': -3, 'redness': -3, 'breakout': -5, 'pimples': -4,
+            'tagal': -3, 'slow': -3, 'bastos': -4, 'rude': -4, 'yupi': -3, 'deformed': -3,
+            'spill': -3, 'tapon': -3, 'basag': -4, 'kulang': -4, 'missing': -4,
+            'sayang': -2, 'waste': -3, 'budol': -4, 'awit': -2, 'sablay': -3, 'mahala': -2
+        },
+        // Sarcasm markers (If present + Positive score = Negative)
+        sarcasm: ['charot', 'char', 'eme', 'chos', 'joke', 'echos', 'ganern', 'sana all']
+    };
+
+    // --- Initialization ---
+    function init() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let pid = urlParams.get('pid');
+        if (!pid) {
+            pid = localStorage.getItem('last_project') || 'MP-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?pid=' + pid;
+            window.history.replaceState({path:newUrl},'',newUrl);
+        }
+        currentProject = pid;
+        localStorage.setItem('last_project', pid);
+        document.getElementById('projectIDDisplay').innerText = pid;
+        render();
+        setInterval(updateTimers, 1000); // 1s tick for smoothness
+    }
+
+    // --- Core NLP Engine ---
+    function analyzeSentiment(text) {
+        let cleanText = text.toLowerCase().replace(/[.,!?;:()]/g, ' ');
+        let tokens = cleanText.split(/\s+/).filter(t => t.length > 0);
+        
+        let score = 0;
+        let negActive = false;
+        let sarcasmDetected = false;
+        
+        // Check for Sarcasm Markers
+        LEXICON.sarcasm.forEach(s => {
+            if (cleanText.includes(s)) sarcasmDetected = true;
+        });
+
+        // Scoring Loop
+        tokens.forEach(token => {
+            if (LEXICON.negators.includes(token)) {
+                negActive = !negActive; // Toggle negation
+                return;
+            }
+            if (LEXICON.flippers.includes(token)) {
+                negActive = false; // Reset negation on conjunction
+                return; // Simple handling: ignore the conjunction itself
+            }
+
+            let wordScore = LEXICON.words[token] || 0;
+            
+            // Context Check: "Super ganda"
+            // (In a real advanced system we'd look back, here we assume adjacent intensifiers increase previous context)
+            
+            if (wordScore !== 0) {
+                if (negActive) wordScore *= -1;
+                score += wordScore;
+                negActive = false; // Reset negation after applying
+            }
+        });
+
+        // Handle Sarcasm: If score is Positive but sarcasm detected -> Flip to Negative
+        if (score > 0 && sarcasmDetected) {
+            score = -2; 
+        }
+
+        // Determine Category
+        let cat = "Quality";
+        const t = cleanText;
+        if (t.match(/rider|driver|courier|bastos|mabait|sigaw|change|sukli/)) cat = "Rider";
+        else if (t.match(/shipping|delivery|ship|shipment|tagal|dumating|receive|parcel|box|yupi|tapon/)) cat = "Logistics";
+        else if (t.match(/skin|face|mukha|hapdi|kati|redness|pimple|acne|breakout|dry|oily|hiyang/)) cat = "Skin Reaction";
+
+        // Determine Sentiment Label
+        let sentiment = "Neutral";
+        if (score > 1) sentiment = "Positive";
+        if (score < -0.5) sentiment = "Negative";
+
+        // Generate Strategy
+        return { score, sentiment, cat, isSarcastic: sarcasmDetected };
+    }
+
+    function getStrategy(cat, sent, text) {
+        if (sent === 'Positive') return {
+            reply: "Thank you specifically for mentioning [KEYWORD]. We'd love to feature this review! ✨",
+            host: "Action: Tag for 'Testimonials'. Send 5% loyalty voucher."
+        };
+        if (sent === 'Neutral') return {
+            reply: "We hear you! We are constantly improving our [CATEGORY] based on feedback like yours.",
+            host: "Action: Monitor. No immediate intervention needed."
+        };
+
+        // Negative Strategies
+        const strategies = {
+            "Skin Reaction": {
+                reply: "🚨 We are concerned about your reaction. Please stop use immediately. DM us with code [CODE] for a dermatologist consultation refund.",
+                host: "CRITICAL: Check Batch # consistency. Flag for Quality Control. Medical Refund Protocol."
+            },
+            "Logistics": {
+                reply: "We apologize for the delay/damage. Use code [CODE] for Free Priority Shipping on your next replenishment.",
+                host: "Action: File dispute with 3PL courier. Issue standard shipping compensation."
+            },
+            "Rider": {
+                reply: "This behavior is unacceptable. We have reported this rider. Use [CODE] for 100 OFF your next order.",
+                host: "Action: Report Rider ID to Platform. Block rider from future pickups."
+            },
+            "Quality": {
+                reply: "Oh no! That doesn't meet our standards. Use code [CODE] for a full replacement sent today.",
+                host: "Action: Warehouse audit required. Immediate replacement."
+            }
+        };
+        return strategies[cat] || strategies['Quality'];
+    }
+
+    // --- Data Management ---
+    function getDB() {
+        return JSON.parse(localStorage.getItem(APP_ID + currentProject)) || [];
+    }
+
+    function saveDB(data) {
+        localStorage.setItem(APP_ID + currentProject, JSON.stringify(data));
+    }
+
+    function importData() {
+        const input = prompt("Paste your bulk reviews/comments (One per line):");
+        if (!input) return;
+        
+        const lines = input.split('\n').filter(l => l.trim().length > 2);
+        const db = getDB();
+        
+        lines.forEach(line => {
+            const analysis = analyzeSentiment(line);
+            const strat = getStrategy(analysis.cat, analysis.sentiment, line);
+            const entry = {
+                id: 'R-' + Date.now() + Math.random().toString(36).substr(2, 5),
+                text: line,
+                ...analysis,
+                replyTemplate: strat.reply,
+                hostStrategy: strat.host,
+                voucher: null,
+                expiry: null,
+                timestamp: Date.now()
+            };
+            db.push(entry);
+        });
+        saveDB(db);
+        render();
+    }
+
+    function createVoucher(id) {
+        const db = getDB();
+        const idx = db.findIndex(i => i.id === id);
+        if (idx > -1) {
+            db[idx].voucher = 'MARI-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            db[idx].expiry = Date.now() + (EXPIRY_HOURS * 60 * 60 * 1000);
+            saveDB(db);
+            render();
+        }
+    }
+
+    function deleteItem(id) {
+        if(!confirm("Delete this entry?")) return;
+        const db = getDB().filter(i => i.id !== id);
+        saveDB(db);
+        render();
+    }
+
+    function wipeData() {
+        if(confirm("Are you sure you want to wipe ALL data for this project?")) {
+            saveDB([]);
+            render();
+        }
+    }
+
+    // --- Rendering & Logic ---
+    function render() {
+        const db = getDB();
+        const resultsDiv = document.getElementById('results');
+        const trackerDiv = document.getElementById('trackerList');
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const catF = document.getElementById('catFilter').value;
+        const sentF = document.getElementById('sentFilter').value;
+
+        resultsDiv.innerHTML = '';
+        trackerDiv.innerHTML = '';
+
+        // Stats Counters
+        let stats = { skin:0, qual:0, log:0, ride:0, pos:0, neu:0, neg:0, vAct:0, vExp:0 };
+
+        const filtered = db.filter(item => {
+            // Stats (Count everything, not just filtered)
+            return true;
+        }).filter(item => {
+            // Apply Filters
+            const matchesSearch = item.text.toLowerCase().includes(search) || (item.voucher && item.voucher.toLowerCase().includes(search));
+            const matchesCat = catF === 'All' || item.cat === catF;
+            const matchesSent = sentF === 'All' || item.sentiment === sentF;
+            return matchesSearch && matchesCat && matchesSent;
+        });
+
+        // Recalculate stats based on full DB for accuracy
+        db.forEach(i => {
+            if(i.cat === 'Skin Reaction') stats.skin++;
+            else if(i.cat === 'Logistics') stats.log++;
+            else if(i.cat === 'Rider') stats.ride++;
+            else stats.qual++;
+
+            if(i.sentiment === 'Positive') stats.pos++;
+            else if(i.sentiment === 'Negative') stats.neg++;
+            else stats.neu++;
+
+            if(i.voucher) {
+                if(Date.now() < i.expiry) stats.vAct++; else stats.vExp++;
+            }
+        });
+
+        // Update Stat DOM
+        document.getElementById('s_skin').innerText = stats.skin;
+        document.getElementById('s_quality').innerText = stats.qual;
+        document.getElementById('s_logistics').innerText = stats.log;
+        document.getElementById('s_rider').innerText = stats.ride;
+        document.getElementById('s_pos').innerText = stats.pos;
+        document.getElementById('s_neg').innerText = stats.neg;
+        document.getElementById('s_neu').innerText = stats.neu;
+        document.getElementById('s_v_active').innerText = stats.vAct;
+        document.getElementById('s_v_exp').innerText = stats.vExp;
+        document.getElementById('s_v_total').innerText = stats.vAct + stats.vExp;
+        document.getElementById('trackerCount').innerText = stats.vAct;
+
+        // Render List
+        if (filtered.length === 0) {
+            resultsDiv.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--subtext);">No results found. Try importing data.</div>`;
+        }
+
+        filtered.slice().reverse().forEach(item => {
+            // Visual Config
+            let color = 'var(--subtext)';
+            if(item.sentiment === 'Positive') color = 'var(--green)';
+            if(item.sentiment === 'Negative') color = 'var(--pink)';
+            if(item.sentiment === 'Neutral') color = 'var(--orange)';
+
+            let finalReply = item.replyTemplate.replace('[CODE]', item.voucher || '[GENERATE_CODE]');
+            if (item.cat !== 'Skin Reaction' && item.cat !== 'Rider') {
+               finalReply = finalReply.replace('[CATEGORY]', 'products'); 
+            }
+
+            // Voucher HTML
+            let voucherHTML = '';
+            if (item.voucher) {
+                const isExpired = Date.now() > item.expiry;
+                voucherHTML = `
+                <div class="voucher-section ${isExpired ? 'hidden' : ''}">
+                    <div class="voucher-active">
+                        <small style="color:var(--pink); font-weight:bold;">ACTIVE STRATEGY</small>
+                        <span class="voucher-code">${item.voucher}</span>
+                        <div id="time-txt-${item.id}" style="font-size:0.7rem;">Calculating...</div>
+                        <div class="timer-track"><div id="time-bar-${item.id}" class="timer-fill"></div></div>
+                    </div>
+                </div>`;
+                
+                // Add to tracker
+                if (!isExpired) {
+                    trackerDiv.innerHTML += `
+                    <div class="tracker-item">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                            <span>${item.voucher}</span> <span style="font-size:0.7rem; color:${color}">${item.cat}</span>
+                        </div>
+                        <small>${item.text.substring(0, 30)}...</small>
+                    </div>`;
+                }
+            } else if (item.sentiment === 'Negative') {
+                voucherHTML = `<div class="voucher-section"><button class="btn btn-pink" style="width:100%; justify-content:center;" onclick="createVoucher('${item.id}')">🎁 Generate Recovery Voucher</button></div>`;
+            }
+
+            // Card HTML
+            resultsDiv.innerHTML += `
+            <div class="result-card" style="border-top: 4px solid ${color}">
+                <div class="card-header">
+                    <div>
+                        <span class="badge badge-cat">${item.cat}</span>
+                        <span class="badge" style="background:${color}; color:white;">${item.sentiment}</span>
+                        ${item.isSarcastic ? '<span class="badge" style="background:#8b5cf6; color:white;">Sarcasm</span>' : ''}
+                    </div>
+                    <button class="delete-btn" onclick="deleteItem('${item.id}')">&times;</button>
+                </div>
+                
+                <p class="comment-text">"${item.text}"</p>
+                
+                <div class="strategy-box">
+                    <span class="strategy-title">Host Strategy</span>
+                    ${item.hostStrategy}
+                </div>
+
+                <div class="reply-box">
+                    <b>Suggest Reply:</b><br>
+                    <i style="color:var(--subtext)">${finalReply}</i>
+                    <button class="copy-btn" onclick="copyText('${finalReply.replace(/'/g, "\\'")}')">COPY</button>
+                </div>
+
+                ${voucherHTML}
+            </div>`;
+        });
+    }
+
+    function updateTimers() {
+        const db = getDB();
+        db.forEach(item => {
+            if (item.voucher && item.expiry) {
+                const bar = document.getElementById(`time-bar-${item.id}`);
+                const txt = document.getElementById(`time-txt-${item.id}`);
+                
+                if (bar && txt) {
+                    const now = Date.now();
+                    const timeLeft = item.expiry - now;
+                    const totalTime = EXPIRY_HOURS * 60 * 60 * 1000;
+                    
+                    if (timeLeft <= 0) {
+                        txt.innerText = "EXPIRED";
+                        bar.style.width = "0%";
+                    } else {
+                        const percent = (timeLeft / totalTime) * 100;
+                        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                        const mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                        txt.innerText = `${hours}h ${mins}m remaining`;
+                        bar.style.width = percent + "%";
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Utilities ---
+    function copyText(text) {
+        navigator.clipboard.writeText(text);
+        alert("Reply copied to clipboard!");
+    }
+
+    function exportData() {
+        const db = getDB();
+        if(db.length === 0) { alert("No data to export."); return; }
+        
+        let csvContent = "data:text/csv;charset=utf-8,ID,Text,Category,Sentiment,Voucher,Reply,Strategy\n";
+        db.forEach(row => {
+            let rowStr = `"${row.id}","${row.text.replace(/"/g, '""')}","${row.cat}","${row.sentiment}","${row.voucher||''}","${row.replyTemplate.replace(/"/g, '""')}","${row.hostStrategy.replace(/"/g, '""')}"`;
+            csvContent += rowStr + "\n";
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Mariposa_Recovery_${currentProject}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function shareProject() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url);
+        alert("Project Link Copied!\n\nAnyone with this link can access these results on this browser (if data is synced) or you can share the ID: " + currentProject);
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const current = body.getAttribute('data-theme');
+        body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+
+    // Start
+    window.onload = init;
+
+</script>
+</body>
+</html>
 
