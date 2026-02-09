@@ -1,1 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mariposa NLP Pro | Hybrid AI Engine v2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --subtext: #64748b;
+            --pink: #f43f5e; --blue: #3b82f6; --green: #10b981; --orange: #f59e0b;
+            --purple: #8b5cf6; --border: #e2e8f0; 
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1); --radius: 12px;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --subtext: #94a3b8;
+            --border: #334155; --shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+        }
+        
+        * { box-sizing: border-box; outline: none; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; transition: 0.3s; line-height: 1.5; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        /* Header */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        h1 { margin: 0; font-weight: 800; color: var(--pink); font-size: 1.8rem; letter-spacing: -1px; }
+        h1 span { color: var(--text); font-weight: 300; opacity: 0.8; }
+        
+        /* Buttons */
+        button { cursor: pointer; transition: 0.2s; font-family: 'Inter', sans-serif; }
+        button:active { transform: scale(0.96); }
+        .theme-btn { padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-weight: 600; font-size: 0.85rem; }
+        
+        .btn { border: none; padding: 10px 16px; border-radius: 8px; color: white; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: var(--shadow); }
+        .btn:hover { opacity: 0.9; }
+        .btn-pink { background: var(--pink); } .btn-blue { background: var(--blue); }
+        .btn-green { background: var(--green); } .btn-red { background: #ef4444; }
+        .btn-purple { background: var(--purple); }
+        .btn-gray { background: var(--subtext); }
+        .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+        
+        /* Brain Controls */
+        .brain-controls { display: flex; gap: 5px; margin-left: 10px; }
+        .brain-badge { background: rgba(139, 92, 246, 0.1); border: 1px solid var(--purple); color: var(--purple); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; display:flex; align-items:center; gap:5px; }
+
+        /* Controls */
+        .controls-wrapper { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
+        .search-bar { background: var(--card); padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; box-shadow: var(--shadow); }
+        .input-field { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        .action-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .stat-title { font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: var(--subtext); margin-bottom: 10px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+
+        /* Main Grid */
+        .main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 25px; align-items: start; }
+        @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
+
+        #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        
+        /* Analysis Card */
+        .result-card { 
+            background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); 
+            box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative; 
+            transition: transform 0.2s;
+        }
+        .result-card:hover { transform: translateY(-3px); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .cust-id { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: var(--bg); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--subtext); }
+        
+        .sentiment-badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .orig-text { font-size: 0.95rem; font-weight: 600; margin: 10px 0; color: var(--text); line-height: 1.4; }
+        .trans-text { font-size: 0.85rem; color: var(--subtext); font-style: italic; border-left: 2px solid var(--border); padding-left: 10px; margin-bottom: 15px; }
+
+        /* AI & Teach Section */
+        .ai-section { margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 10px; }
+        .teach-mode-ui { display: none; background: var(--bg); padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid var(--purple); }
+        .teach-active { display: block; animation: fadeIn 0.3s ease; }
+        
+        .ai-confidence { font-size: 0.65rem; color: var(--subtext); margin-bottom: 5px; display: block; text-align: right; }
+
+        .clear-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.2rem; color: var(--subtext); opacity: 0.5; }
+        .clear-btn:hover { opacity: 1; color: var(--pink); }
+
+        .voucher-box { margin-top: 10px; padding: 10px; border: 2px dashed var(--pink); border-radius: 8px; text-align: center; background: rgba(244, 63, 94, 0.02); display: flex; justify-content: space-between; align-items: center; }
+        .voucher-code { color: var(--pink); font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+
+        /* Sidebar */
+        .sidebar { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); height: fit-content; position: sticky; top: 20px; }
+        
+        /* File Input Hidden */
+        #brainUpload { display: none; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body data-theme="dark">
+
+<div class="container">
+    <header>
+        <div>
+            <h1>Mariposa NLP <span>Pro</span></h1>
+            <p style="margin:0; color:var(--subtext); font-size: 0.9rem;">Hybrid AI v2.0: Context Aware & Sync Ready</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <div class="brain-badge">
+                🧠 Memory: <span id="kbCount">0</span>
+            </div>
+            <button class="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
+        </div>
+    </header>
+
+    <div class="controls-wrapper">
+        <div class="search-bar">
+            <input type="text" id="searchInput" class="input-field" placeholder="Search Sentiment, Text or Customer ID..." oninput="render()">
+            <select id="filterCat" class="input-field" style="width:150px" onchange="render()">
+                <option value="All">All Categories</option>
+                <option value="Skin">Skin Reaction</option>
+                <option value="Quality">Quality</option>
+                <option value="Logistics">Logistics</option>
+                <option value="Rider">Rider</option>
+            </select>
+        </div>
+        
+        <div class="action-bar">
+            <button class="btn btn-pink" onclick="importData()">📥 Import Bulk</button>
+            <button class="btn btn-blue" onclick="exportData()">📊 Export Report</button>
+            
+            <div style="width:1px; background:var(--border); margin:0 10px;"></div>
+            
+            <button class="btn btn-purple" onclick="downloadBrain()">💾 Backup Brain</button>
+            <button class="btn btn-purple" onclick="document.getElementById('brainUpload').click()">📂 Load Brain</button>
+            <input type="file" id="brainUpload" accept=".json" onchange="uploadBrain(this)">
+            
+            <div style="flex:1"></div>
+            <button class="btn btn-red" onclick="wipeData()">🗑 Clear List</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Pain Points (Skin)</div>
+            <div class="stat-value" id="s_skin" style="color:var(--pink)">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Pain Points (Logistics)</div>
+            <div class="stat-value" id="s_log" style="color:var(--blue)">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Total Analyzed</div>
+            <div class="stat-value" id="s_total">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Active Recoveries</div>
+            <div class="stat-value" id="s_active" style="color:var(--green)">0</div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div id="results">
+            </div>
+
+        <aside class="sidebar">
+            <h3 style="margin:0 0 15px 0; font-size:1rem;">Active Recovery Tracker</h3>
+            <div id="trackerList" style="max-height:500px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+                <p style="text-align:center; font-size:0.8rem; color:var(--subtext);">No active strategies deployed.</p>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>
+    // --- STATE ---
+    const PROJ_ID = 'MP_HYBRID_';
+    let currentPID = new URLSearchParams(window.location.search).get('pid') || 'SESSION_1';
+    
+    // --- 1. ENHANCED LEXICON (Expanded for Accuracy) ---
+    // Added 50+ new words and handling for negation
+    const DICT = {
+        negators: ['hindi', 'di', 'ayaw', 'wala', 'not', 'never', 'wag', 'huwag'],
+        scanners: {
+            // Skin / Medical (High Priority)
+            'mahapdi': {s:-4, c:'S', en:'stinging'}, 'hapdi': {s:-4, c:'S', en:'sting'},
+            'kati': {s:-4, c:'S', en:'itchy'}, 'namumula': {s:-3, c:'S', en:'redness'},
+            'pimple': {s:-4, c:'S', en:'acne'}, 'breakout': {s:-5, c:'S', en:'severe breakout'},
+            'allerg': {s:-5, c:'S', en:'allergy'}, 'burn': {s:-5, c:'S', en:'burning'},
+            'hot': {s:-2, c:'S', en:'hot sensation'}, 'sugat': {s:-5, c:'S', en:'wound'},
+            
+            // Logistics
+            'tagal': {s:-3, c:'L', en:'slow'}, 'bagal': {s:-3, c:'L', en:'slow'},
+            'yupi': {s:-3, c:'L', en:'dented'}, 'tapon': {s:-4, c:'L', en:'spilled'},
+            'kulang': {s:-4, c:'L', en:'missing item'}, 'missing': {s:-4, c:'L', en:'missing'},
+            'wrong': {s:-3, c:'L', en:'wrong item'}, 'mali': {s:-3, c:'L', en:'wrong item'},
+            'delay': {s:-3, c:'L', en:'delayed'},
+            
+            // Quality
+            'sira': {s:-4, c:'Q', en:'broken'}, 'basag': {s:-5, c:'Q', en:'shattered'},
+            'fake': {s:-5, c:'Q', en:'fake'}, 'scam': {s:-5, c:'Q', en:'scam'},
+            'budol': {s:-4, c:'Q', en:'scam'}, 'sayang': {s:-3, c:'Q', en:'waste'},
+            'love': {s:4, c:'Q', en:'love'}, 'effective': {s:4, c:'S', en:'effective'},
+            'ganda': {s:3, c:'Q', en:'beautiful'}, 'bango': {s:2, c:'Q', en:'fragrant'},
+            'smooth': {s:3, c:'Q', en:'smooth'}, 'lambot': {s:3, c:'Q', en:'soft'},
+            'expire': {s:-5, c:'Q', en:'expired'}, 'baho': {s:-3, c:'Q', en:'stinky'},
+            'dry': {s:-2, c:'Q', en:'dry'}, 'tigas': {s:-2, c:'Q', en:'hard'},
+            
+            // Rider
+            'bastos': {s:-5, c:'R', en:'rude'}, 'mabait': {s:3, c:'R', en:'kind'},
+            'sungit': {s:-3, c:'R', en:'grumpy'}, 'magalang': {s:3, c:'R', en:'polite'},
+            
+            // General Sentiment
+            'oks': {s:2, c:'Q', en:'ok'}, 'goods': {s:3, c:'Q', en:'good'},
+            'panalo': {s:4, c:'Q', en:'winner'}, 'sulit': {s:4, c:'Q', en:'worth it'},
+            'disappoint': {s:-3, c:'Q', en:'disappointed'}, 'bad': {s:-3, c:'Q', en:'bad'},
+            'ok': {s:1, c:'Q', en:'okay'}
+        },
+        connectors: {
+            'ang': 'the', 'ng': 'of', 'sa': 'in/at/to', 'ako': 'me', 'ko': 'my', 
+            'pero': 'but', 'kaso': 'however', 'dahil': 'because', 'hindi': 'not', 
+            'di': 'not', 'wala': 'no', 'meron': 'have', 'sana': 'hope', 'ito': 'this'
+        }
+    };
+
+    // --- 2. UPGRADED BRAIN (Bigrams + Logic) ---
+    class BayesBrain {
+        constructor() {
+            this.vocab = {};
+            this.docCount = { sentiment: {}, category: {} };
+            this.wordCount = { sentiment: {}, category: {} };
+            this.totalDocs = 0;
+            this.load();
+        }
+
+        // Improved Tokenizer: Handles "Not Good" logic and Bigrams
+        tokenize(text) {
+            const raw = text.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 1);
+            let tokens = [];
+            
+            for(let i=0; i<raw.length; i++) {
+                // 1. Unigrams
+                tokens.push(raw[i]);
+                
+                // 2. Bigrams (Context) - e.g., "hindi_maganda"
+                if(i < raw.length - 1) {
+                    tokens.push(raw[i] + '_' + raw[i+1]);
+                }
+
+                // 3. Negation handling for Unigrams
+                if (DICT.negators.includes(raw[i]) && i < raw.length - 1) {
+                    tokens.push('NOT_' + raw[i+1]); 
+                }
+            }
+            return tokens;
+        }
+
+        load() {
+            const data = JSON.parse(localStorage.getItem('MP_BAYES_MODEL_V2')) || { vocab: {}, docCount: {sentiment:{}, category:{}}, wordCount: {sentiment:{}, category:{}}, totalDocs: 0 };
+            this.vocab = data.vocab;
+            this.docCount = data.docCount;
+            this.wordCount = data.wordCount;
+            this.totalDocs = data.totalDocs;
+        }
+
+        save() {
+            localStorage.setItem('MP_BAYES_MODEL_V2', JSON.stringify({
+                vocab: this.vocab,
+                docCount: this.docCount,
+                wordCount: this.wordCount,
+                totalDocs: this.totalDocs
+            }));
+            updateKBStats();
+        }
+
+        // Sync Features
+        exportBrain() {
+            const data = localStorage.getItem('MP_BAYES_MODEL_V2');
+            if(!data) return alert("Brain is empty! Teach it something first.");
+            const blob = new Blob([data], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Mariposa_Brain_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+
+        importBrain(jsonString) {
+            try {
+                const data = JSON.parse(jsonString);
+                if(!data.vocab || !data.docCount) throw new Error("Invalid Brain File");
+                localStorage.setItem('MP_BAYES_MODEL_V2', jsonString);
+                this.load();
+                alert("Brain updated successfully! New patterns loaded.");
+                location.reload();
+            } catch(e) {
+                alert("Error loading brain: " + e.message);
+            }
+        }
+
+        train(text, sentiment, category) {
+            const tokens = this.tokenize(text);
+            this.totalDocs++;
+            
+            if (!this.docCount.sentiment[sentiment]) this.docCount.sentiment[sentiment] = 0;
+            if (!this.docCount.category[category]) this.docCount.category[category] = 0;
+            
+            this.docCount.sentiment[sentiment]++;
+            this.docCount.category[category]++;
+
+            tokens.forEach(token => {
+                if (!this.vocab[token]) this.vocab[token] = true;
+                
+                // Weigh "Teach Mode" tokens heavily (x2)
+                const weight = 2; 
+
+                if (!this.wordCount.sentiment[token]) this.wordCount.sentiment[token] = {};
+                if (!this.wordCount.sentiment[token][sentiment]) this.wordCount.sentiment[token][sentiment] = 0;
+                this.wordCount.sentiment[token][sentiment] += weight;
+
+                if (!this.wordCount.category[token]) this.wordCount.category[token] = {};
+                if (!this.wordCount.category[token][category]) this.wordCount.category[token][category] = 0;
+                this.wordCount.category[token][category] += weight;
+            });
+            this.save();
+        }
+
+        predict(text) {
+            const tokens = this.tokenize(text);
+            if (this.totalDocs < 3) return null; 
+
+            const getScore = (type, label) => {
+                let logProb = 0;
+                const classCount = this.docCount[type][label] || 0;
+                if (classCount === 0) return -Infinity;
+                logProb += Math.log(classCount / this.totalDocs);
+
+                tokens.forEach(token => {
+                    if (this.vocab[token]) {
+                        const tokenCounts = this.wordCount[type][token] || {};
+                        const countInClass = tokenCounts[label] || 0;
+                        const totalWordsInClass = Object.values(this.wordCount[type]).reduce((acc, t) => acc + (t[label] || 0), 0);
+                        // Laplace Smoothing
+                        logProb += Math.log((countInClass + 1) / (totalWordsInClass + Object.keys(this.vocab).length));
+                    }
+                });
+                return logProb;
+            };
+
+            const sentiments = ['Positive', 'Negative', 'Neutral'];
+            let bestSent = 'Neutral', maxSentScore = -Infinity;
+            sentiments.forEach(s => {
+                let score = getScore('sentiment', s);
+                if (score > maxSentScore) { maxSentScore = score; bestSent = s; }
+            });
+
+            const categories = ['Skin', 'Logistics', 'Quality', 'Rider'];
+            let bestCat = 'Quality', maxCatScore = -Infinity;
+            categories.forEach(c => {
+                let score = getScore('category', c);
+                if (score > maxCatScore) { maxCatScore = score; bestCat = c; }
+            });
+
+            return { sentiment: bestSent, category: bestCat };
+        }
+    }
+
+    const brain = new BayesBrain();
+
+    // --- 3. ANALYZER ---
+    
+    function translateToEnglish(text) {
+        let words = text.toLowerCase().replace(/[.,!]/g, '').split(/\s+/);
+        return words.map(w => {
+            if(DICT.scanners[w]) return `[${DICT.scanners[w].en}]`;
+            if(DICT.connectors[w]) return DICT.connectors[w];
+            return w;
+        }).join(' ');
+    }
+
+    function analyze(text) {
+        let result = { sent: 'Neutral', cat: 'Quality', method: 'Keyword', trans: translateToEnglish(text) };
+        
+        // 1. AI Prediction
+        const aiPrediction = brain.predict(text);
+        
+        // 2. Keyword Scoring (Improved Negation)
+        let clean = text.toLowerCase().split(/[\s.,!?]+/);
+        let score = 0;
+        let cats = { S:0, L:0, R:0, Q:0 };
+        
+        for(let i=0; i<clean.length; i++) {
+            let word = clean[i];
+            let multiplier = 1;
+
+            // Check previous word for negation
+            if(i > 0 && DICT.negators.includes(clean[i-1])) {
+                multiplier = -1; 
+            }
+
+            // Fuzzy match for stems (e.g. "hapdi" matches "mahapdi")
+            let match = DICT.scanners[word];
+            if(!match) {
+                // Try finding part of word
+                const key = Object.keys(DICT.scanners).find(k => word.includes(k));
+                if(key) match = DICT.scanners[key];
+            }
+
+            if(match) {
+                score += (match.s * multiplier);
+                cats[match.c]++;
+            }
+        }
+
+        // Determine Keyword Result
+        let maxCat = 'Q'; let maxVal = 0;
+        for (let [k, v] of Object.entries(cats)) { if(v > maxVal) { maxVal = v; maxCat = k; } }
+        const catMap = { S:'Skin', L:'Logistics', R:'Rider', Q:'Quality' };
+        let lexCat = catMap[maxCat];
+        let lexSent = score >= 1 ? 'Positive' : (score <= -1 ? 'Negative' : 'Neutral');
+
+        // 3. Decision Logic: AI takes over if it has experience
+        if (aiPrediction && brain.totalDocs > 3) {
+            result.sent = aiPrediction.sentiment;
+            result.cat = aiPrediction.category;
+            result.method = 'AI Brain (v2)';
+        } else {
+            result.sent = lexSent;
+            result.cat = lexCat;
+            result.method = 'Keywords';
+        }
+
+        return result;
+    }
+
+    function getStrategy(sent, cat) {
+        if(sent === 'Positive') return { r: "Thanks! We'd love to feature this! ✨", s: "Request UGC / Testimonial" };
+        if(sent === 'Neutral') return { r: "Thanks for the feedback!", s: "Monitor" };
+        const strats = {
+            'Skin': { r: "🚨 Stop use immediately. DM us code [CODE] for a medical refund.", s: "CRITICAL: Medical Protocol" },
+            'Logistics': { r: "Sorry for the delay. Use [CODE] for free shipping next time.", s: "Flag Courier / Refund" },
+            'Rider': { r: "We have reported this rider. Use [CODE] for a discount.", s: "Report Rider ID" },
+            'Quality': { r: "Oh no! Use [CODE] for a free replacement.", s: "Warehouse Audit / Replace" }
+        };
+        return strats[cat] || strats['Quality'];
+    }
+
+    // --- DATA HANDLING ---
+    function getDB() { return JSON.parse(localStorage.getItem(PROJ_ID + currentPID)) || []; }
+    function saveDB(data) { localStorage.setItem(PROJ_ID + currentPID, JSON.stringify(data)); }
+
+    function importData() {
+        const input = prompt("Paste Bulk Sentiments (One per line):");
+        if(!input) return;
+        const db = getDB();
+        const lines = input.split('\n').filter(l => l.trim().length > 1);
+        lines.forEach(line => {
+            const data = analyze(line);
+            const strat = getStrategy(data.sent, data.cat);
+            db.push({
+                id: 'ID-' + Math.random().toString(36).substr(2, 5),
+                custID: 'C-' + Math.floor(Math.random() * 900 + 100),
+                text: line,
+                ...data,
+                reply: strat.r,
+                strat: strat.s,
+                voucher: null,
+                timestamp: Date.now()
+            });
+        });
+        saveDB(db);
+        render();
+    }
+
+    // --- TEACH & SYNC ---
+    function toggleTeachUI(id) {
+        const ui = document.getElementById(`teach-ui-${id}`);
+        ui.classList.toggle('teach-active');
+        if(ui.classList.contains('teach-active')) ui.style.display = 'block';
+        else ui.style.display = 'none';
+    }
+
+    function submitTeach(id) {
+        const db = getDB();
+        const item = db.find(i => i.id === id);
+        
+        const newSent = document.getElementById(`teach-sent-${id}`).value;
+        const newCat = document.getElementById(`teach-cat-${id}`).value;
+
+        // Train Brain
+        brain.train(item.text, newSent, newCat);
+
+        // Update Item
+        item.sent = newSent;
+        item.cat = newCat;
+        item.method = 'User Override';
+        const strat = getStrategy(newSent, newCat);
+        item.strat = strat.s;
+        item.reply = strat.r;
+
+        saveDB(db);
+        render();
+        alert("AI Trained! To share this learning, click 'Backup Brain'.");
+    }
+
+    function downloadBrain() { brain.exportBrain(); }
+    function uploadBrain(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) { brain.importBrain(e.target.result); };
+        reader.readAsText(file);
+    }
+
+    function resetKnowledge() {
+        if(confirm("Reset all learned AI patterns? (Cannot be undone)")) {
+            localStorage.removeItem('MP_BAYES_MODEL_V2');
+            location.reload();
+        }
+    }
+
+    function updateKBStats() {
+        document.getElementById('kbCount').innerText = brain.totalDocs + " patterns";
+    }
+
+    // --- UTILITIES ---
+    function createVoucher(id) {
+        const db = getDB();
+        const idx = db.findIndex(i => i.id === id);
+        if(idx > -1) {
+            db[idx].voucher = 'REC-' + Math.random().toString(36).substr(2,6).toUpperCase();
+            saveDB(db);
+            render();
+        }
+    }
+
+    function cancelVoucher(id) {
+        if(!confirm("Revoke this voucher code?")) return;
+        const db = getDB();
+        const idx = db.findIndex(i => i.id === id);
+        if(idx > -1) {
+            db[idx].voucher = null;
+            saveDB(db);
+            render();
+        }
+    }
+
+    function clearItem(id) {
+        const db = getDB().filter(i => i.id !== id);
+        saveDB(db);
+        render();
+    }
+
+    function wipeData() { if(confirm("Clear current list?")) { saveDB([]); render(); } }
+
+    function render() {
+        const db = getDB();
+        const container = document.getElementById('results');
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const catFilter = document.getElementById('filterCat').value;
+        
+        container.innerHTML = '';
+        let stats = { S:0, L:0, Active:0 };
+
+        const filtered = db.filter(i => {
+            return (i.text.toLowerCase().includes(search) || i.custID.toLowerCase().includes(search) || i.sent.toLowerCase().includes(search)) &&
+                   (catFilter === 'All' || i.cat === catFilter);
+        });
+
+        db.forEach(i => {
+            if(i.cat === 'Skin' && i.sent === 'Negative') stats.S++;
+            if(i.cat === 'Logistics' && i.sent === 'Negative') stats.L++;
+            if(i.voucher) stats.Active++;
+        });
+
+        document.getElementById('s_skin').innerText = stats.S;
+        document.getElementById('s_log').innerText = stats.L;
+        document.getElementById('s_total').innerText = db.length;
+        document.getElementById('s_active').innerText = stats.Active;
+        updateKBStats();
+
+        // Tracker
+        const tracker = document.getElementById('trackerList');
+        tracker.innerHTML = '';
+        db.filter(i => i.voucher).forEach(i => {
+            tracker.innerHTML += `
+            <div style="padding:10px; border-bottom:1px solid var(--border); font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;">
+                <div><b>${i.voucher}</b> <span style="color:var(--subtext)">${i.custID}</span></div>
+                <button style="border:none; background:none; cursor:pointer;" onclick="cancelVoucher('${i.id}')">❌</button>
+            </div>`;
+        });
+
+        // Cards
+        filtered.slice().reverse().forEach(item => {
+            let color = '#94a3b8';
+            if(item.sent === 'Positive') color = 'var(--green)';
+            if(item.sent === 'Negative') color = 'var(--pink)';
+            if(item.sent === 'Neutral') color = 'var(--orange)';
+
+            let actionHTML = item.voucher ? 
+                `<div class="voucher-box">
+                    <span class="voucher-code">${item.voucher}</span>
+                    <button class="btn btn-sm btn-gray" onclick="cancelVoucher('${item.id}')">🚫 Cancel</button>
+                 </div>` : 
+                (item.sent === 'Negative' ? `<button class="btn btn-pink btn-sm" style="width:100%; margin-top:10px;" onclick="createVoucher('${item.id}')">🎁 Voucher</button>` : '');
+
+            container.innerHTML += `
+            <div class="result-card" style="border-top:4px solid ${color}">
+                <button class="clear-btn" onclick="clearItem('${item.id}')">✔</button>
+                <div class="card-header">
+                    <div>
+                        <span class="cust-id">👤 ${item.custID}</span>
+                        <span class="sentiment-badge" style="background:${color}; color:white;">${item.sent}</span>
+                        <span class="sentiment-badge" style="background:var(--bg); border:1px solid var(--border)">${item.cat}</span>
+                    </div>
+                </div>
+
+                <div class="orig-text">"${item.text}"</div>
+                <div class="trans-text">🇺🇸 "${item.trans}"</div>
+
+                <span class="ai-confidence">Analyzed via: ${item.method}</span>
+
+                <div class="strategy-box">
+                    <b style="color:var(--blue); font-size:0.7rem;">ACTION:</b> ${item.strat}<br>
+                    <i style="font-size:0.75rem">Reply: ${item.reply.replace('[CODE]', item.voucher || '...')}</i>
+                </div>
+
+                ${actionHTML}
+
+                <div class="ai-section">
+                    <button class="btn btn-purple btn-sm" style="width:100%" onclick="toggleTeachUI('${item.id}')">🎓 Teach AI</button>
+                    <div id="teach-ui-${item.id}" class="teach-mode-ui">
+                        <small style="color:var(--text); font-weight:bold;">Correct the AI:</small>
+                        <select id="teach-sent-${item.id}" class="input-field" style="width:100%; margin:5px 0;">
+                            <option value="Positive" ${item.sent==='Positive'?'selected':''}>Positive</option>
+                            <option value="Neutral" ${item.sent==='Neutral'?'selected':''}>Neutral</option>
+                            <option value="Negative" ${item.sent==='Negative'?'selected':''}>Negative</option>
+                        </select>
+                        <select id="teach-cat-${item.id}" class="input-field" style="width:100%; margin:5px 0;">
+                            <option value="Skin" ${item.cat==='Skin'?'selected':''}>Skin Reaction</option>
+                            <option value="Quality" ${item.cat==='Quality'?'selected':''}>Product Quality</option>
+                            <option value="Logistics" ${item.cat==='Logistics'?'selected':''}>Logistics</option>
+                            <option value="Rider" ${item.cat==='Rider'?'selected':''}>Rider</option>
+                        </select>
+                        <button class="btn btn-green btn-sm" style="width:100%" onclick="submitTeach('${item.id}')">✅ Learn & Update</button>
+                    </div>
+                </div>
+            </div>`;
+        });
+    }
+
+    function exportData() {
+        const db = getDB();
+        let csv = "ID,Text,Sentiment,Category,Method,Strategy\n";
+        db.forEach(i => csv += `${i.custID},"${i.text.replace(/"/g, '""')}",${i.sent},${i.cat},${i.method},"${i.strat}"\n`);
+        const link = document.createElement("a");
+        link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+        link.download = "Mariposa_Hybrid_Analysis.csv";
+        link.click();
+    }
+
+    function toggleTheme() {
+        document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    }
+
+    window.onload = function() {
+        updateKBStats();
+        render();
+    };
+</script>
+</body>
+</html>
 
