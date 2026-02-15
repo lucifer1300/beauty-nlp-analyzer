@@ -1,1 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mariposa NLP | Mobile Master v3.1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0;
+            --text: #0f172a; --text-light: #64748b;
+            --primary: #db2777; --primary-hover: #be185d; --primary-light: #fce7f3;
+            --accent: #ec4899; 
+            --danger: #ef4444; --danger-bg: #fef2f2;
+            --warning: #f59e0b; --warning-bg: #fffbeb;
+            --success: #10b981; --success-bg: #f0fdf4;
+            --sarcasm: #8b5cf6; --sarcasm-bg: #f3e8ff;
+            --radius: 12px; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --header-height: 60px;
+        }
+        
+        [data-theme="dark"] {
+            --bg: #0f172a; --surface: #1e293b; --border: #334155;
+            --text: #f8fafc; --text-light: #94a3b8;
+            --primary: #ec4899; --primary-hover: #f472b6; --primary-light: rgba(236, 72, 153, 0.1);
+            --danger-bg: rgba(239,68,68,0.1);
+            --warning-bg: rgba(245,158,11,0.1);
+            --success-bg: rgba(16,185,129,0.1);
+            --sarcasm-bg: rgba(139, 92, 246, 0.15);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: var(--font-main); 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        /* --- MOBILE HEADER --- */
+        .mobile-header {
+            display: none;
+            height: var(--header-height);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 50;
+        }
+
+        .hamburger {
+            background: none; border: none; font-size: 1.5rem; color: var(--text); cursor: pointer; padding: 5px;
+        }
+
+        /* --- LAYOUT GRID --- */
+        .layout { 
+            display: grid; 
+            grid-template-columns: 280px 1fr; 
+            gap: 20px; 
+            flex: 1; 
+            min-height: 0; 
+            padding: 20px;
+            position: relative;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar { 
+            display: flex; flex-direction: column; gap: 16px; 
+            overflow-y: auto; padding-right: 4px; 
+            transition: transform 0.3s ease;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .main { 
+            display: flex; flex-direction: column; gap: 0; 
+            overflow: hidden; 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            box-shadow: var(--shadow); 
+            position: relative; 
+        }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 860px) {
+            body { padding: 0; }
+            .mobile-header { display: flex; }
+            
+            .layout { 
+                grid-template-columns: 1fr; 
+                padding: 0; 
+                gap: 0;
+            }
+
+            .sidebar {
+                position: fixed;
+                inset: 0;
+                width: 85%;
+                max-width: 320px;
+                background: var(--surface);
+                z-index: 100;
+                padding: 20px;
+                border-right: 1px solid var(--border);
+                transform: translateX(-100%);
+                box-shadow: 20px 0 50px rgba(0,0,0,0.3);
+            }
+
+            .sidebar.active { transform: translateX(0); }
+
+            .sidebar-overlay {
+                position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
+                z-index: 90; display: none; backdrop-filter: blur(2px);
+            }
+            .sidebar-overlay.active { display: block; }
+
+            .main { border-radius: 0; border: none; }
+            
+            .charts-section { 
+                grid-template-columns: 1fr; 
+                height: auto; 
+                padding: 10px;
+            }
+            .chart-wrapper { height: 220px; margin-bottom: 10px; }
+            
+            .dashboard-header {
+                display: flex;
+                overflow-x: auto;
+                padding: 15px;
+                gap: 10px;
+                scroll-snap-type: x mandatory;
+            }
+            .stat-box {
+                min-width: 140px;
+                scroll-snap-align: start;
+            }
+        }
+
+        /* --- COMPONENTS --- */
+        .card { background: var(--surface); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+        
+        .btn { 
+            width: 100%; padding: 14px;
+            border-radius: 10px; border: 1px solid transparent; 
+            font-weight: 600; font-size: 0.9rem; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            gap: 8px; transition: opacity 0.2s; 
+        }
+        .btn:active { opacity: 0.7; transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
+        .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+        .btn-sm { padding: 6px 12px; font-size: 0.75rem; width: auto; border-radius: 6px; }
+
+        .dashboard-header { border-bottom: 1px solid var(--border); background: var(--surface); z-index: 10; }
+        
+        .stat-box { background: var(--bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
+        .stat-label { font-size: 0.7rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-val { font-size: 1.5rem; font-weight: 700; margin-top: 4px; }
+        
+        .charts-section { background: var(--bg); padding: 20px; border-bottom: 1px solid var(--border); }
+        .chart-wrapper { background: var(--surface); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); position: relative; }
+
+        .feed-container { overflow-y: auto; flex: 1; padding: 15px; background: var(--bg); -webkit-overflow-scrolling: touch; }
+        
+        /* Review Cards */
+        .review-card { background: var(--surface); padding: 0; margin-bottom: 16px; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        
+        .card-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.01); }
+        .card-body { padding: 16px; }
+        .card-footer { padding: 12px 16px; background: var(--bg); border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+
+        .card-pos .card-header { border-left: 4px solid var(--success); }
+        .card-neg .card-header { border-left: 4px solid var(--danger); }
+        .card-shield .card-header { border-left: 4px solid var(--danger); background: var(--danger-bg); }
+        .card-sarcasm .card-header { border-left: 4px solid var(--sarcasm); background: var(--sarcasm-bg); }
+
+        .tag { font-size: 0.65rem; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; display: inline-block; margin-right: 4px; }
+        .tag-pill { background: var(--surface); border: 1px solid var(--border); color: var(--text-light); }
+        
+        .action-box { display: flex; gap: 10px; align-items: stretch; margin-top: 5px; }
+        .action-label { font-size: 0.7rem; font-weight: 700; color: var(--text-light); width: 60px; flex-shrink: 0; padding-top: 6px; }
+        .action-content { font-size: 0.85rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; flex: 1; line-height: 1.4; position: relative; }
+        
+        .copy-btn { position: absolute; right: 5px; top: 5px; border: none; background: transparent; color: var(--primary); font-size: 0.7rem; font-weight: 600; cursor: pointer; }
+
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--font-main); font-size: 16px; }
+        input:focus, textarea:focus { border-color: var(--primary); }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; place-items: center; z-index: 200; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s; }
+        .modal.active { opacity: 1; }
+        .modal-box { background: var(--surface); width: 90%; max-width: 600px; padding: 24px; border-radius: var(--radius); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+
+        #toast { visibility: hidden; min-width: 250px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 50px; padding: 12px 24px; position: fixed; z-index: 300; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 0.9rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" onclick="ui.toggleSidebar()"></div>
+
+<div class="mobile-header">
+    <div style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.2rem;">🦋</span> Mariposa Mobile
+    </div>
+    <button class="hamburger" onclick="ui.toggleSidebar()">☰</button>
+</div>
+
+<div class="layout">
+    <div class="sidebar" id="sidebar">
+        <div class="card" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <h2 style="font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    NLP Engine
+                </h2>
+                <small style="color: var(--text-light); font-size: 0.7rem;">VERSION 3.1 (STRATEGY)</small>
+            </div>
+            <div id="statusDot" style="width:10px; height:10px; background:var(--border); border-radius:50%;" title="Offline"></div>
+        </div>
+
+        <button class="btn btn-outline" style="display: none; @media (max-width: 860px) { display: block; }" onclick="ui.toggleSidebar()">Close Menu</button>
+
+        <div class="card">
+            <h3 style="font-size: 0.7rem; color: var(--text-light); margin: 0 0 8px 0;">SYNC ROOM</h3>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="serverInput" placeholder="Room ID" style="font-family: var(--font-mono);">
+                <button class="btn btn-primary" style="width: auto; padding: 0 16px;" onclick="network.connect()">Join</button>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 3px solid var(--warning);">
+            <h3 style="font-size: 0.7rem; color: var(--warning); margin: 0 0 8px 0;">SAFETY SHIELD (RAG)</h3>
+            <input type="text" id="userAllergies" placeholder="Allergens (e.g. Nuts)" onchange="memory.updateProfile()">
+        </div>
+
+        <div class="card" style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn btn-primary" onclick="ui.showModal('importModal'); ui.toggleSidebar()">📥 Bulk Analysis</button>
+            <button class="btn btn-outline" onclick="io.exportExcel()">📊 Export CSV</button>
+            <button class="btn btn-outline" onclick="ui.toggleTheme()">🌓 Dark Mode</button>
+            <button class="btn btn-outline" onclick="ui.showModal('teachModal'); ui.toggleSidebar()">🧠 Train Logic</button>
+            <div style="flex: 1;"></div>
+            <button class="btn btn-danger" onclick="memory.wipe()">🗑 Wipe Data</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="dashboard-header">
+            <div class="stat-box">
+                <span class="stat-label">Total</span>
+                <div class="stat-val" id="m-total">0</div>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid var(--success);">
+                <span class="stat-label">Positive</span>
+                <div class="stat-val" id="m-pos" style="color:var(--success)">0%</div>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid var(--danger);">
+                <span class="stat-label">Negative</span>
+                <div class="stat-val" id="m-neg" style="color:var(--danger)">0%</div>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid var(--sarcasm);">
+                <span class="stat-label">Risk/Sarcasm</span>
+                <div class="stat-val" id="m-shield" style="color:var(--sarcasm)">0</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-wrapper">
+                <canvas id="pieChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <div class="feed-container">
+            <div id="feed">
+                <div style="text-align: center; color: var(--text-light); padding: 40px;">
+                    Ready for data...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="importModal" class="modal">
+    <div class="modal-box">
+        <h3 style="margin-top:0;">Bulk Import</h3>
+        <textarea id="rawInput" rows="6" placeholder="Paste reviews here..."></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+            <button class="btn btn-outline" style="width: auto;" onclick="ui.hideModal('importModal')">Cancel</button>
+            <button class="btn btn-primary" style="width: auto;" onclick="nlp.processBatch()">Analyze</button>
+        </div>
+    </div>
+</div>
+
+<div id="teachModal" class="modal">
+    <div class="modal-box">
+        <h3 style="margin-top:0;">Add Logic</h3>
+        <div style="display:flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="t-word" placeholder="Keyword">
+            <input type="text" id="t-trans" placeholder="Translation">
+            <select id="t-cat">
+                <option value="Skin">Skin Reaction</option>
+                <option value="Quality">Quality</option>
+                <option value="Logistics">Logistics</option>
+                <option value="Efficacy">Efficacy</option>
+            </select>
+            <select id="t-sent">
+                <option value="-1">Negative Impact</option>
+                <option value="1">Positive Impact</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" style="margin-top:15px;" onclick="nlp.learnRule()">Add Rule</button>
+        <button class="btn btn-outline" style="margin-top:5px;" onclick="ui.hideModal('teachModal')">Close</button>
+    </div>
+</div>
+
+<div id="toast">Notification</div>
+
+<script>
+/**
+ * MARIPOSA NLP ENGINE V3.1
+ * Updated: Strategy Generator, Suggested Responses, Copy Functionality
+ */
+
+// --- 1. DATA & STATE ---
+const APP_STATE = {
+    serverID: localStorage.getItem('MP_SERVER') || 'LOCAL',
+    profile: localStorage.getItem('MP_PROFILE') || '',
+    data: [], 
+    customRules: JSON.parse(localStorage.getItem('MP_RULES')) || {},
+    channel: null,
+    isDark: localStorage.getItem('MP_THEME') === 'dark'
+};
+
+const BASE_KNOWLEDGE = {
+    // Skin/Medical (Higher weights for detection)
+    'hapdi': { score: -2, cat: 'Skin', trans: 'stinging' },
+    'kati': { score: -1, cat: 'Skin', trans: 'itchiness' },
+    'namula': { score: -2, cat: 'Skin', trans: 'redness' },
+    'breakout': { score: -2, cat: 'Skin', trans: 'acne flare' },
+    'pantal': { score: -2, cat: 'Skin', trans: 'hives/rash' },
+    'hiyang': { score: 2, cat: 'Skin', trans: 'compatible' },
+    'kinis': { score: 2, cat: 'Skin', trans: 'smooth' },
+
+    // Quality/Texture
+    'bango': { score: 1, cat: 'Quality', trans: 'good smell' },
+    'baho': { score: -2, cat: 'Quality', trans: 'bad smell' },
+    'lagkit': { score: -1, cat: 'Quality', trans: 'sticky' },
+    'fake': { score: -5, cat: 'Quality', trans: 'counterfeit' },
+    'tunaw': { score: -1, cat: 'Quality', trans: 'melted' },
+    'basag': { score: -2, cat: 'Quality', trans: 'broken glass' },
+
+    // Logistics & Efficacy
+    'tagal': { score: -1, cat: 'Logistics', trans: 'slow' },
+    'sira': { score: -2, cat: 'Logistics', trans: 'damaged' },
+    'mabilis': { score: 1, cat: 'Logistics', trans: 'fast' },
+    'effective': { score: 2, cat: 'Efficacy', trans: 'effective' },
+    'budol': { score: 1, cat: 'Efficacy', trans: 'worth buying' },
+    'galing': { score: 2, cat: 'General', trans: 'great' },
+    'sayang': { score: -2, cat: 'General', trans: 'waste' },
+
+    // Sarcasm Markers
+    'charot': { score: 0, cat: 'Sarcasm', trans: 'joke' },
+    'eme': { score: 0, cat: 'Sarcasm', trans: 'joke' },
+    'anyare': { score: -1, cat: 'Sarcasm', trans: 'disbelief' }
+};
+
+// --- 2. STRATEGY ENGINE (NEW) ---
+const strategyEngine = {
+    generate: (item) => {
+        // Priority 1: Safety Shield (RAG)
+        if (item.shield) {
+            return {
+                reply: "We take your safety seriously. Please discontinue use immediately. We've sent you a DM to gather more details for our medical safety team.",
+                action: `🚨 URGENT: Clinical Escalation. Allergen Detected: [${item.shieldReason}]`
+            };
+        }
+
+        // Priority 2: Skin Reaction (Negative)
+        if (item.category === 'Skin' && item.sentiment === 'Negative') {
+            return {
+                reply: "Oh no! We're sorry to hear about your skin's reaction. Please stop using the product to let your skin calm down. DM us so we can assist with a refund/exchange.",
+                action: "🛡️ SAFETY: Log adverse event. Check Batch #."
+            };
+        }
+
+        // Priority 3: Sarcasm / Polarity Clash
+        if (item.sarcasm) {
+            return {
+                reply: "We appreciate your honest feedback. We're looking into this immediately to ensure our standards are met.",
+                action: "🎭 SARCASM DETECTED: Manual review required. Do not auto-reply."
+            };
+        }
+
+        // Priority 4: Counterfeit/Fake
+        if (item.raw.toLowerCase().includes('fake')) {
+            return {
+                reply: "This is concerning. We only sell authentic goods. Please DM us your Order ID so we can verify the source immediately.",
+                action: "⚖️ LEGAL: Verify authenticity. Potential IP infringement."
+            };
+        }
+
+        // Priority 5: Standard Logic
+        switch(item.category) {
+            case 'Logistics':
+                if (item.sentiment === 'Negative') return {
+                    reply: "We apologize for the delay/damage. This isn't the experience we want for you. Please DM your Order ID for a priority check.",
+                    action: "🚚 OPS: Check courier status/SLAs."
+                };
+                return { reply: "Glad it arrived safely! 🦋 Enjoy!", action: "✅ LOGS: Fulfilled." };
+            
+            case 'Quality':
+            case 'Efficacy':
+            case 'General':
+                if (item.sentiment === 'Positive') return {
+                    reply: "We're blushing! 🦋 So happy it worked for you. Would you mind if we featured this on our page?",
+                    action: "🌟 MKT: Request UGC/Testimonial permission."
+                };
+                return {
+                    reply: "We're sorry this didn't meet expectations. We'd love to make it right—please check your DMs.",
+                    action: "📉 CS: Retention protocol. Offer voucher."
+                };
+            
+            default:
+                return {
+                    reply: "Thank you for your feedback!",
+                    action: "📝 LOG: Standard Entry."
+                };
+        }
+    }
+};
+
+// --- 3. NETWORK & IO ---
+const network = {
+    connect: () => {
+        const id = document.getElementById('serverInput').value.trim().toUpperCase() || 'LOCAL';
+        APP_STATE.serverID = id;
+        localStorage.setItem('MP_SERVER', id);
+        
+        if (APP_STATE.channel) APP_STATE.channel.close();
+        APP_STATE.channel = new BroadcastChannel(`MP_SYNC_${id}`);
+        APP_STATE.channel.onmessage = (e) => {
+            if (e.data.type === 'SYNC') {
+                APP_STATE.data = e.data.payload;
+                ui.renderFeed();
+                ui.showToast(`Synced with ${id}`);
+            }
+        };
+
+        document.getElementById('serverInput').value = id;
+        document.getElementById('statusDot').style.background = 'var(--success)';
+        
+        const saved = localStorage.getItem(`MP_DATA_${id}`);
+        APP_STATE.data = saved ? JSON.parse(saved) : [];
+        ui.renderFeed();
+        ui.showToast(`Room: ${id}`);
+    },
+    save: () => {
+        localStorage.setItem(`MP_DATA_${APP_STATE.serverID}`, JSON.stringify(APP_STATE.data));
+        if (APP_STATE.channel) APP_STATE.channel.postMessage({ type: 'SYNC', payload: APP_STATE.data });
+        ui.renderFeed();
+    }
+};
+
+const memory = {
+    updateProfile: () => {
+        APP_STATE.profile = document.getElementById('userAllergies').value;
+        localStorage.setItem('MP_PROFILE', APP_STATE.profile);
+        ui.showToast("Safety Profile Updated");
+    },
+    wipe: () => {
+        if (confirm("Delete all data?")) {
+            APP_STATE.data = [];
+            network.save();
+            ui.showToast("Data Cleared");
+        }
+    }
+};
+
+// --- 4. NLP LOGIC ---
+const nlp = {
+    getBrain: () => ({ ...BASE_KNOWLEDGE, ...APP_STATE.customRules }),
+    processBatch: () => {
+        const raw = document.getElementById('rawInput').value;
+        if (!raw.trim()) { ui.showToast("Empty Input"); return; }
+        
+        const lines = raw.split('\n').filter(l => l.trim().length > 0);
+        const brain = nlp.getBrain();
+        
+        lines.forEach(text => {
+            const lower = text.toLowerCase();
+            let netScore = 0, posHits = 0, negHits = 0;
+            let detectedCats = {}, matches = [], translations = [];
+            let shieldTrigger = false, sarcasmTrigger = false, shieldReason = "";
+
+            // Keyword Scan
+            Object.entries(brain).forEach(([key, rule]) => {
+                const regex = new RegExp(`\\b${key}\\b`, 'i');
+                if (regex.test(lower)) {
+                    if (rule.score > 0) posHits += rule.score;
+                    if (rule.score < 0) negHits += Math.abs(rule.score);
+                    netScore += rule.score;
+                    
+                    matches.push(key);
+                    translations.push(rule.trans);
+                    
+                    if (!detectedCats[rule.cat]) detectedCats[rule.cat] = 0;
+                    detectedCats[rule.cat]++;
+
+                    if (rule.cat === 'Sarcasm') sarcasmTrigger = true;
+                }
+            });
+
+            // Safety RAG
+            if (APP_STATE.profile) {
+                APP_STATE.profile.split(',').forEach(a => {
+                    const allergen = a.trim().toLowerCase();
+                    if (allergen && lower.includes(allergen)) {
+                        shieldTrigger = true;
+                        shieldReason = allergen;
+                    }
+                });
+            }
+
+            // Sarcasm / Polarity Clash
+            if ((posHits >= 2 && negHits >= 2) || sarcasmTrigger) {
+                sarcasmTrigger = true;
+                netScore = -5; 
+                if(!detectedCats['Skin']) detectedCats['Quality'] = 10;
+            }
+
+            let finalCat = Object.keys(detectedCats).reduce((a, b) => detectedCats[a] > detectedCats[b] ? a : b, 'Quality');
+            if (matches.length === 0) finalCat = 'General';
+            
+            let sentiment = netScore > 0 ? 'Positive' : (netScore < 0 ? 'Negative' : 'Neutral');
+
+            // Strategy Generation
+            const strategies = strategyEngine.generate({
+                raw: text, category: finalCat, sentiment: sentiment, 
+                shield: shieldTrigger, shieldReason: shieldReason, sarcasm: sarcasmTrigger
+            });
+
+            APP_STATE.data.unshift({
+                id: Date.now() + Math.random().toString(16).slice(2),
+                raw: text, trans: translations.join(', ') || "-", 
+                category: finalCat, sentiment, 
+                reply: strategies.reply,
+                action: strategies.action,
+                shield: shieldTrigger, sarcasm: sarcasmTrigger, date: new Date().toLocaleDateString()
+            });
+        });
+
+        document.getElementById('rawInput').value = '';
+        ui.hideModal('importModal');
+        network.save();
+        ui.showToast(`Processed ${lines.length} items`);
+    },
+    learnRule: () => {
+        const w = document.getElementById('t-word').value.trim().toLowerCase();
+        const t = document.getElementById('t-trans').value;
+        const c = document.getElementById('t-cat').value;
+        const s = parseInt(document.getElementById('t-sent').value);
+        if(!w) return;
+
+        APP_STATE.customRules[w] = { score: s, cat: c, trans: t };
+        localStorage.setItem('MP_RULES', JSON.stringify(APP_STATE.customRules));
+        ui.hideModal('teachModal');
+        ui.showToast("Rule Learned");
+    }
+};
+
+// --- 5. UI & CHARTS ---
+const ui = {
+    init: () => {
+        if (APP_STATE.isDark) document.body.setAttribute('data-theme', 'dark');
+        document.getElementById('userAllergies').value = APP_STATE.profile;
+        network.connect();
+    },
+    toggleSidebar: () => {
+        const sb = document.getElementById('sidebar');
+        const ov = document.querySelector('.sidebar-overlay');
+        if (sb.classList.contains('active')) {
+            sb.classList.remove('active');
+            ov.classList.remove('active');
+        } else {
+            sb.classList.add('active');
+            ov.classList.add('active');
+        }
+    },
+    toggleTheme: () => {
+        APP_STATE.isDark = !APP_STATE.isDark;
+        document.body.setAttribute('data-theme', APP_STATE.isDark ? 'dark' : 'light');
+        localStorage.setItem('MP_THEME', APP_STATE.isDark ? 'dark' : 'light');
+        charts.update(ui.getStats());
+    },
+    showModal: (id) => {
+        const el = document.getElementById(id);
+        el.style.display = 'grid';
+        setTimeout(() => el.classList.add('active'), 10);
+    },
+    hideModal: (id) => {
+        const el = document.getElementById(id);
+        el.classList.remove('active');
+        setTimeout(() => el.style.display = 'none', 200);
+    },
+    showToast: (msg) => {
+        const t = document.getElementById("toast");
+        t.className = "show";
+        t.innerText = msg;
+        setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+    },
+    copyText: (text) => {
+        navigator.clipboard.writeText(text).then(() => ui.showToast("Response Copied!"));
+    },
+    getStats: () => {
+        let s = { total: APP_STATE.data.length, pos:0, neg:0, shield:0, catCounts: [0,0,0,0] };
+        APP_STATE.data.forEach(d => {
+            if (d.sentiment === 'Positive') s.pos++;
+            if (d.sentiment === 'Negative') s.neg++;
+            if (d.shield || d.sarcasm) s.shield++;
+            
+            if (d.category === 'Quality') s.catCounts[0]++;
+            else if (d.category === 'Skin') s.catCounts[1]++;
+            else if (d.category === 'Logistics') s.catCounts[2]++;
+            else if (d.category === 'Efficacy') s.catCounts[3]++;
+        });
+        return s;
+    },
+    renderFeed: () => {
+        const f = document.getElementById('feed');
+        const s = ui.getStats();
+        
+        document.getElementById('m-total').innerText = s.total;
+        document.getElementById('m-pos').innerText = s.total ? Math.round((s.pos/s.total)*100) + '%' : '0%';
+        document.getElementById('m-neg').innerText = s.total ? Math.round((s.neg/s.total)*100) + '%' : '0%';
+        document.getElementById('m-shield').innerText = s.shield;
+
+        f.innerHTML = '';
+        if(APP_STATE.data.length === 0) {
+             f.innerHTML = '<div style="text-align: center; color: var(--text-light); padding: 40px;">No reviews.</div>';
+        } else {
+            APP_STATE.data.forEach((item, idx) => {
+                let cls = item.sentiment === 'Positive' ? 'card-pos' : (item.sentiment === 'Negative' ? 'card-neg' : '');
+                if (item.shield) cls = 'card-shield';
+                else if (item.sarcasm) cls = 'card-sarcasm';
+
+                const card = document.createElement('div');
+                card.className = `review-card ${cls}`;
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                             <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                                <span class="tag tag-pill">${item.category}</span>
+                                ${item.shield ? '<span class="tag" style="background:var(--danger); color:white;">SAFETY ALERT</span>' : ''}
+                                ${item.sarcasm ? '<span class="tag" style="background:var(--sarcasm); color:white;">SARCASM</span>' : ''}
+                             </div>
+                             <small style="color:var(--text-light); font-size:0.7rem;">${item.trans}</small>
+                        </div>
+                        <button onclick="io.del(${idx})" style="background:none; border:none; font-size:1.5rem; color:var(--text-light); opacity:0.5;">&times;</button>
+                    </div>
+                    
+                    <div class="card-body">
+                        <p style="font-weight:600; margin: 0; font-size: 0.95rem; line-height:1.5;">"${item.raw}"</p>
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="action-box">
+                            <div class="action-label">REPLY:</div>
+                            <div class="action-content">
+                                ${item.reply}
+                                <button class="copy-btn" onclick="ui.copyText('${item.reply.replace(/'/g, "\\'")}')">COPY</button>
+                            </div>
+                        </div>
+                        <div class="action-box">
+                            <div class="action-label">HOST:</div>
+                            <div class="action-content" style="background:var(--bg); color:var(--text-light); font-family:var(--font-mono); font-size:0.75rem;">
+                                ${item.action}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                f.appendChild(card);
+            });
+        }
+        charts.update(s);
+    }
+};
+
+const io = {
+    del: (i) => { APP_STATE.data.splice(i, 1); network.save(); },
+    exportExcel: () => {
+        if(APP_STATE.data.length === 0) return ui.showToast("No data.");
+        let csv = "ID,Review,Category,Sentiment,Suggested_Reply,Internal_Action\n";
+        APP_STATE.data.forEach(d => {
+            csv += `${d.id},"${d.raw.replace(/"/g, '""')}",${d.category},${d.sentiment},"${d.reply.replace(/"/g, '""')}","${d.action.replace(/"/g, '""')}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Mariposa_${APP_STATE.serverID}_Strategies.csv`;
+        a.click();
+    }
+};
+
+const charts = {
+    pie: null, bar: null,
+    update: (s) => {
+        const ctxP = document.getElementById('pieChart');
+        const ctxB = document.getElementById('barChart');
+        if(!ctxP || !ctxB) return;
+
+        if (charts.pie) charts.pie.destroy();
+        if (charts.bar) charts.bar.destroy();
+
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        const txtColor = isDark ? '#94a3b8' : '#64748b';
+        
+        const opts = { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { display: false } } 
+        };
+
+        charts.pie = new Chart(ctxP, {
+            type: 'doughnut',
+            data: {
+                labels: ['Qual', 'Skin', 'Log', 'Eff'],
+                datasets: [{ data: s.catCounts, backgroundColor: ['#db2777', '#f59e0b', '#64748b', '#10b981'], borderWidth: 0 }]
+            },
+            options: { ...opts, plugins: { title: { display: true, text: 'Categories', color: txtColor } } }
+        });
+
+        charts.bar = new Chart(ctxB, {
+            type: 'bar',
+            data: {
+                labels: ['Pos', 'Neg', 'Risk'],
+                datasets: [{ data: [s.pos, s.neg, s.shield], backgroundColor: ['#10b981', '#ef4444', '#8b5cf6'], borderRadius: 4 }]
+            },
+            options: { ...opts, indexAxis: 'y', scales: { x: { display: false }, y: { ticks: { color: txtColor }, grid: { display: false } } } }
+        });
+    }
+};
+
+window.onload = ui.init;
+</script>
+</body>
+</html>
 
