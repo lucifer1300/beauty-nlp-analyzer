@@ -1,1 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mariposa NLP | Mobile Master v3.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0;
+            --text: #0f172a; --text-light: #64748b;
+            --primary: #db2777; --primary-hover: #be185d; --primary-light: #fce7f3;
+            --accent: #ec4899; 
+            --danger: #ef4444; --danger-bg: #fef2f2;
+            --warning: #f59e0b; --warning-bg: #fffbeb;
+            --success: #10b981; --success-bg: #f0fdf4;
+            --sarcasm: #8b5cf6; --sarcasm-bg: #f3e8ff;
+            --radius: 12px; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --header-height: 60px;
+        }
+        
+        [data-theme="dark"] {
+            --bg: #0f172a; --surface: #1e293b; --border: #334155;
+            --text: #f8fafc; --text-light: #94a3b8;
+            --primary: #ec4899; --primary-hover: #f472b6; --primary-light: rgba(236, 72, 153, 0.1);
+            --danger-bg: rgba(239,68,68,0.1);
+            --warning-bg: rgba(245,158,11,0.1);
+            --success-bg: rgba(16,185,129,0.1);
+            --sarcasm-bg: rgba(139, 92, 246, 0.15);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
 
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: var(--font-main); 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        /* --- MOBILE HEADER (Visible on Small Screens) --- */
+        .mobile-header {
+            display: none;
+            height: var(--header-height);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 50;
+        }
+
+        .hamburger {
+            background: none; border: none; font-size: 1.5rem; color: var(--text); cursor: pointer; padding: 5px;
+        }
+
+        /* --- LAYOUT GRID --- */
+        .layout { 
+            display: grid; 
+            grid-template-columns: 280px 1fr; 
+            gap: 20px; 
+            flex: 1; 
+            min-height: 0; 
+            padding: 20px;
+            position: relative;
+        }
+
+        /* --- SIDEBAR (Desktop: Static, Mobile: Drawer) --- */
+        .sidebar { 
+            display: flex; flex-direction: column; gap: 16px; 
+            overflow-y: auto; padding-right: 4px; 
+            transition: transform 0.3s ease;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .main { 
+            display: flex; flex-direction: column; gap: 0; 
+            overflow: hidden; 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            box-shadow: var(--shadow); 
+            position: relative; 
+        }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 860px) {
+            body { padding: 0; }
+            .mobile-header { display: flex; }
+            
+            .layout { 
+                grid-template-columns: 1fr; 
+                padding: 0; 
+                gap: 0;
+            }
+
+            .sidebar {
+                position: fixed;
+                inset: 0;
+                width: 85%;
+                max-width: 320px;
+                background: var(--surface);
+                z-index: 100;
+                padding: 20px;
+                border-right: 1px solid var(--border);
+                transform: translateX(-100%); /* Hidden by default */
+                box-shadow: 20px 0 50px rgba(0,0,0,0.3);
+            }
+
+            .sidebar.active { transform: translateX(0); }
+
+            .sidebar-overlay {
+                position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
+                z-index: 90; display: none; backdrop-filter: blur(2px);
+            }
+            .sidebar-overlay.active { display: block; }
+
+            .main { border-radius: 0; border: none; }
+            
+            /* Adjust charts for mobile */
+            .charts-section { 
+                grid-template-columns: 1fr; 
+                height: auto; 
+                padding: 10px;
+            }
+            .chart-wrapper { height: 220px; margin-bottom: 10px; }
+            
+            /* Stat boxes scroll horizontally on mobile */
+            .dashboard-header {
+                display: flex;
+                overflow-x: auto;
+                padding: 15px;
+                gap: 10px;
+                scroll-snap-type: x mandatory;
+            }
+            .stat-box {
+                min-width: 140px;
+                scroll-snap-align: start;
+            }
+        }
+
+        /* --- COMPONENTS --- */
+        .card { background: var(--surface); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+        
+        /* Mobile-Friendly Buttons */
+        .btn { 
+            width: 100%; padding: 14px; /* Taller for touch */
+            border-radius: 10px; border: 1px solid transparent; 
+            font-weight: 600; font-size: 0.9rem; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            gap: 8px; transition: opacity 0.2s; 
+        }
+        .btn:active { opacity: 0.7; transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
+        .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* Dashboard Internals */
+        .dashboard-header { border-bottom: 1px solid var(--border); background: var(--surface); z-index: 10; }
+        
+        .stat-box { background: var(--bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
+        .stat-label { font-size: 0.7rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-val { font-size: 1.5rem; font-weight: 700; margin-top: 4px; }
+        
+        .charts-section { background: var(--bg); padding: 20px; border-bottom: 1px solid var(--border); }
+        .chart-wrapper { background: var(--surface); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); position: relative; }
+
+        .feed-container { overflow-y: auto; flex: 1; padding: 15px; background: var(--bg); -webkit-overflow-scrolling: touch; }
+        
+        /* Review Cards */
+        .review-card { background: var(--surface); padding: 16px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--border); border-left: 4px solid var(--border); display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+        .card-pos { border-left-color: var(--success); }
+        .card-neg { border-left-color: var(--danger); }
+        .card-shield { border: 2px solid var(--danger) !important; background: var(--danger-bg) !important; }
+        .card-sarcasm { border-left-color: var(--sarcasm); border-right: 2px solid var(--sarcasm); background: var(--sarcasm-bg) !important; }
+
+        .tag { font-size: 0.65rem; padding: 4px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+        .tag-pill { background: var(--bg); border: 1px solid var(--border); color: var(--text-light); }
+        
+        .bot-response { background: var(--bg); border-left: 3px solid var(--primary); padding: 10px; border-radius: 0 6px 6px 0; font-size: 0.8rem; margin-top: 10px; color: var(--text-light); line-height: 1.4; }
+
+        /* Form Elements */
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--font-main); font-size: 16px; /* Prevents iOS zoom */ }
+        input:focus, textarea:focus { border-color: var(--primary); }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; place-items: center; z-index: 200; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s; }
+        .modal.active { opacity: 1; }
+        .modal-box { background: var(--surface); width: 90%; max-width: 600px; padding: 24px; border-radius: var(--radius); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+
+        /* Toast */
+        #toast { visibility: hidden; min-width: 250px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 50px; padding: 12px 24px; position: fixed; z-index: 300; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 0.9rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" onclick="ui.toggleSidebar()"></div>
+
+<div class="mobile-header">
+    <div style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.2rem;">🦋</span> Mariposa Mobile
+    </div>
+    <button class="hamburger" onclick="ui.toggleSidebar()">☰</button>
+</div>
+
+<div class="layout">
+    <div class="sidebar" id="sidebar">
+        <div class="card" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <h2 style="font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    NLP Engine
+                </h2>
+                <small style="color: var(--text-light); font-size: 0.7rem;">VERSION 3.0 (MOBILE)</small>
+            </div>
+            <div id="statusDot" style="width:10px; height:10px; background:var(--border); border-radius:50%;" title="Offline"></div>
+        </div>
+
+        <button class="btn btn-outline" style="display: none; @media (max-width: 860px) { display: block; }" onclick="ui.toggleSidebar()">Close Menu</button>
+
+        <div class="card">
+            <h3 style="font-size: 0.7rem; color: var(--text-light); margin: 0 0 8px 0;">SYNC ROOM</h3>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="serverInput" placeholder="Room ID" style="font-family: var(--font-mono);">
+                <button class="btn btn-primary" style="width: auto; padding: 0 16px;" onclick="network.connect()">Join</button>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 3px solid var(--warning);">
+            <h3 style="font-size: 0.7rem; color: var(--warning); margin: 0 0 8px 0;">SAFETY SHIELD (RAG)</h3>
+            <input type="text" id="userAllergies" placeholder="Allergens (e.g. Nuts)" onchange="memory.updateProfile()">
+        </div>
+
+        <div class="card" style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn btn-primary" onclick="ui.showModal('importModal'); ui.toggleSidebar()">📥 Bulk Analysis</button>
+            <button class="btn btn-outline" onclick="io.exportExcel()">📊 Export CSV</button>
+            <button class="btn btn-outline" onclick="ui.toggleTheme()">🌓 Dark Mode</button>
+            <button class="btn btn-outline" onclick="ui.showModal('teachModal'); ui.toggleSidebar()">🧠 Train Logic</button>
+            <div style="flex: 1;"></div>
+            <button class="btn btn-danger" onclick="memory.wipe()">🗑 Wipe Data</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="dashboard-header">
+            <div class="stat-box">
+                <span class="stat-label">Total</span>
+                <div class="stat-val" id="m-total">0</div>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid var(--success);">
+                <span class="stat-label">Positive</span>
+                <div class="stat-val" id="m-pos" style="color:var(--success)">0%</div>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid var(--danger);">
+                <span class="stat-label">Negative</span>
+                <div class="stat-val" id="m-neg" style="color:var(--danger)">0%</div>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid var(--sarcasm);">
+                <span class="stat-label">Sarcasm/Risk</span>
+                <div class="stat-val" id="m-shield" style="color:var(--sarcasm)">0</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-wrapper">
+                <canvas id="pieChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <div class="feed-container">
+            <div id="feed">
+                <div style="text-align: center; color: var(--text-light); padding: 40px;">
+                    Ready for data...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="importModal" class="modal">
+    <div class="modal-box">
+        <h3 style="margin-top:0;">Bulk Import</h3>
+        <textarea id="rawInput" rows="6" placeholder="Paste reviews here..."></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+            <button class="btn btn-outline" style="width: auto;" onclick="ui.hideModal('importModal')">Cancel</button>
+            <button class="btn btn-primary" style="width: auto;" onclick="nlp.processBatch()">Analyze</button>
+        </div>
+    </div>
+</div>
+
+<div id="teachModal" class="modal">
+    <div class="modal-box">
+        <h3 style="margin-top:0;">Add Logic</h3>
+        <div style="display:flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="t-word" placeholder="Keyword">
+            <input type="text" id="t-trans" placeholder="Translation">
+            <select id="t-cat">
+                <option value="Skin">Skin Reaction</option>
+                <option value="Quality">Quality</option>
+                <option value="Logistics">Logistics</option>
+                <option value="Efficacy">Efficacy</option>
+            </select>
+            <select id="t-sent">
+                <option value="-1">Negative Impact</option>
+                <option value="1">Positive Impact</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" style="margin-top:15px;" onclick="nlp.learnRule()">Add Rule</button>
+        <button class="btn btn-outline" style="margin-top:5px;" onclick="ui.hideModal('teachModal')">Close</button>
+    </div>
+</div>
+
+<div id="toast">Notification</div>
+
+<script>
+/**
+ * MARIPOSA NLP ENGINE V3.0 (MOBILE OPTIMIZED)
+ * Includes: Sarcasm, RAG, Responsive Charts
+ */
+
+// --- 1. DATA & STATE ---
+const APP_STATE = {
+    serverID: localStorage.getItem('MP_SERVER') || 'LOCAL',
+    profile: localStorage.getItem('MP_PROFILE') || '',
+    data: [], 
+    customRules: JSON.parse(localStorage.getItem('MP_RULES')) || {},
+    channel: null,
+    isDark: localStorage.getItem('MP_THEME') === 'dark'
+};
+
+const BASE_KNOWLEDGE = {
+    // Skin/Medical
+    'hapdi': { score: -2, cat: 'Skin', trans: 'stinging', action: 'CLINICAL: Stop use. Check barrier.' },
+    'kati': { score: -1, cat: 'Skin', trans: 'itchiness', action: 'CLINICAL: Monitor reaction.' },
+    'namula': { score: -2, cat: 'Skin', trans: 'redness', action: 'CLINICAL: Soothing agents needed.' },
+    'breakout': { score: -2, cat: 'Skin', trans: 'acne flare', action: 'CLINICAL: Check purging vs reaction.' },
+    'hiyang': { score: 2, cat: 'Skin', trans: 'compatible', action: 'LOYALTY: Upsell routine.' },
+    'kinis': { score: 2, cat: 'Skin', trans: 'smooth', action: 'UGC: Highlight this.' },
+
+    // Quality/Texture
+    'bango': { score: 1, cat: 'Quality', trans: 'good smell', action: 'FEEDBACK: Fragrance accepted.' },
+    'baho': { score: -2, cat: 'Quality', trans: 'bad smell', action: 'QA: Oxidation check.' },
+    'lagkit': { score: -1, cat: 'Quality', trans: 'sticky', action: 'R&D: Review formula.' },
+    'fake': { score: -5, cat: 'Quality', trans: 'counterfeit', action: 'LEGAL: Verify batch.' },
+    'tunaw': { score: -1, cat: 'Quality', trans: 'melted', action: 'QA: Thermal stability check.' },
+
+    // Logistics & Efficacy
+    'tagal': { score: -1, cat: 'Logistics', trans: 'slow', action: 'CS: Check courier.' },
+    'sira': { score: -2, cat: 'Logistics', trans: 'broken', action: 'CS: Refund/Replace.' },
+    'effective': { score: 2, cat: 'Efficacy', trans: 'effective', action: 'UGC: Prime candidate.' },
+    'budol': { score: 1, cat: 'Efficacy', trans: 'worth buying', action: 'MKT: Social proof.' },
+    'galing': { score: 2, cat: 'General', trans: 'great', action: 'UGC: Potential use.' },
+
+    // Sarcasm Markers
+    'charot': { score: 0, cat: 'Sarcasm', trans: 'joke', action: 'AI: Non-literal flag.' },
+    'eme': { score: 0, cat: 'Sarcasm', trans: 'joke', action: 'AI: Non-literal flag.' },
+    'anyare': { score: -1, cat: 'Sarcasm', trans: 'what happened', action: 'CS: Investigate.' }
+};
+
+// --- 2. NETWORK & IO ---
+const network = {
+    connect: () => {
+        const id = document.getElementById('serverInput').value.trim().toUpperCase() || 'LOCAL';
+        APP_STATE.serverID = id;
+        localStorage.setItem('MP_SERVER', id);
+        
+        if (APP_STATE.channel) APP_STATE.channel.close();
+        APP_STATE.channel = new BroadcastChannel(`MP_SYNC_${id}`);
+        APP_STATE.channel.onmessage = (e) => {
+            if (e.data.type === 'SYNC') {
+                APP_STATE.data = e.data.payload;
+                ui.renderFeed();
+                ui.showToast(`Synced with ${id}`);
+            }
+        };
+
+        document.getElementById('serverInput').value = id;
+        document.getElementById('statusDot').style.background = 'var(--success)';
+        
+        const saved = localStorage.getItem(`MP_DATA_${id}`);
+        APP_STATE.data = saved ? JSON.parse(saved) : [];
+        ui.renderFeed();
+        ui.showToast(`Room: ${id}`);
+    },
+    save: () => {
+        localStorage.setItem(`MP_DATA_${APP_STATE.serverID}`, JSON.stringify(APP_STATE.data));
+        if (APP_STATE.channel) APP_STATE.channel.postMessage({ type: 'SYNC', payload: APP_STATE.data });
+        ui.renderFeed();
+    }
+};
+
+const memory = {
+    updateProfile: () => {
+        APP_STATE.profile = document.getElementById('userAllergies').value;
+        localStorage.setItem('MP_PROFILE', APP_STATE.profile);
+        ui.showToast("Safety Profile Updated");
+    },
+    wipe: () => {
+        if (confirm("Delete all data?")) {
+            APP_STATE.data = [];
+            network.save();
+            ui.showToast("Data Cleared");
+        }
+    }
+};
+
+// --- 3. NLP LOGIC ---
+const nlp = {
+    getBrain: () => ({ ...BASE_KNOWLEDGE, ...APP_STATE.customRules }),
+    processBatch: () => {
+        const raw = document.getElementById('rawInput').value;
+        if (!raw.trim()) { ui.showToast("Empty Input"); return; }
+        
+        const lines = raw.split('\n').filter(l => l.trim().length > 0);
+        const brain = nlp.getBrain();
+        
+        lines.forEach(text => {
+            const lower = text.toLowerCase();
+            let netScore = 0, posHits = 0, negHits = 0;
+            let detectedCats = {}, matches = [], translations = [];
+            let shieldTrigger = false, sarcasmTrigger = false;
+            let primaryAction = "AUTO: Standard Log.";
+
+            // Keyword Scan
+            Object.entries(brain).forEach(([key, rule]) => {
+                const regex = new RegExp(`\\b${key}\\b`, 'i');
+                if (regex.test(lower)) {
+                    if (rule.score > 0) posHits += rule.score;
+                    if (rule.score < 0) negHits += Math.abs(rule.score);
+                    netScore += rule.score;
+                    
+                    matches.push(key);
+                    translations.push(rule.trans);
+                    
+                    if (!detectedCats[rule.cat]) detectedCats[rule.cat] = 0;
+                    detectedCats[rule.cat]++;
+
+                    if (rule.cat === 'Skin' && rule.score < 0) primaryAction = rule.action;
+                    if (rule.cat === 'Sarcasm') sarcasmTrigger = true;
+                }
+            });
+
+            // Safety RAG
+            if (APP_STATE.profile) {
+                APP_STATE.profile.split(',').forEach(a => {
+                    const allergen = a.trim().toLowerCase();
+                    if (allergen && lower.includes(allergen)) {
+                        shieldTrigger = true;
+                        primaryAction = `🚨 ALERT: Allergen [${allergen}] detected.`;
+                    }
+                });
+            }
+
+            // Sarcasm / Polarity Clash
+            if ((posHits >= 2 && negHits >= 2) || sarcasmTrigger) {
+                sarcasmTrigger = true;
+                netScore = -5; 
+                primaryAction = "🎭 SARCASM: Likely negative.";
+                if(!detectedCats['Skin']) detectedCats['Quality'] = 10;
+            }
+
+            let finalCat = Object.keys(detectedCats).reduce((a, b) => detectedCats[a] > detectedCats[b] ? a : b, 'Quality');
+            if (matches.length === 0) finalCat = 'General';
+            
+            let sentiment = netScore > 0 ? 'Positive' : (netScore < 0 ? 'Negative' : 'Neutral');
+
+            APP_STATE.data.unshift({
+                id: Date.now() + Math.random().toString(16).slice(2),
+                raw: text, trans: translations.join(', ') || "-", 
+                category: finalCat, sentiment, action: primaryAction, 
+                shield: shieldTrigger, sarcasm: sarcasmTrigger, date: new Date().toLocaleDateString()
+            });
+        });
+
+        document.getElementById('rawInput').value = '';
+        ui.hideModal('importModal');
+        network.save();
+        ui.showToast(`Processed ${lines.length} items`);
+    },
+    learnRule: () => {
+        const w = document.getElementById('t-word').value.trim().toLowerCase();
+        const t = document.getElementById('t-trans').value;
+        const c = document.getElementById('t-cat').value;
+        const s = parseInt(document.getElementById('t-sent').value);
+        if(!w) return;
+
+        APP_STATE.customRules[w] = { score: s, cat: c, trans: t, action: `MANUAL: Custom rule for ${w}` };
+        localStorage.setItem('MP_RULES', JSON.stringify(APP_STATE.customRules));
+        ui.hideModal('teachModal');
+        ui.showToast("Rule Learned");
+    }
+};
+
+// --- 4. UI & CHARTS ---
+const ui = {
+    init: () => {
+        if (APP_STATE.isDark) document.body.setAttribute('data-theme', 'dark');
+        document.getElementById('userAllergies').value = APP_STATE.profile;
+        network.connect();
+    },
+    toggleSidebar: () => {
+        const sb = document.getElementById('sidebar');
+        const ov = document.querySelector('.sidebar-overlay');
+        if (sb.classList.contains('active')) {
+            sb.classList.remove('active');
+            ov.classList.remove('active');
+        } else {
+            sb.classList.add('active');
+            ov.classList.add('active');
+        }
+    },
+    toggleTheme: () => {
+        APP_STATE.isDark = !APP_STATE.isDark;
+        document.body.setAttribute('data-theme', APP_STATE.isDark ? 'dark' : 'light');
+        localStorage.setItem('MP_THEME', APP_STATE.isDark ? 'dark' : 'light');
+        charts.update(ui.getStats());
+    },
+    showModal: (id) => {
+        const el = document.getElementById(id);
+        el.style.display = 'grid';
+        setTimeout(() => el.classList.add('active'), 10);
+    },
+    hideModal: (id) => {
+        const el = document.getElementById(id);
+        el.classList.remove('active');
+        setTimeout(() => el.style.display = 'none', 200);
+    },
+    showToast: (msg) => {
+        const t = document.getElementById("toast");
+        t.className = "show";
+        t.innerText = msg;
+        setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+    },
+    getStats: () => {
+        let s = { total: APP_STATE.data.length, pos:0, neg:0, shield:0, catCounts: [0,0,0,0] };
+        APP_STATE.data.forEach(d => {
+            if (d.sentiment === 'Positive') s.pos++;
+            if (d.sentiment === 'Negative') s.neg++;
+            if (d.shield || d.sarcasm) s.shield++;
+            
+            if (d.category === 'Quality') s.catCounts[0]++;
+            else if (d.category === 'Skin') s.catCounts[1]++;
+            else if (d.category === 'Logistics') s.catCounts[2]++;
+            else if (d.category === 'Efficacy') s.catCounts[3]++;
+        });
+        return s;
+    },
+    renderFeed: () => {
+        const f = document.getElementById('feed');
+        const s = ui.getStats();
+        
+        document.getElementById('m-total').innerText = s.total;
+        document.getElementById('m-pos').innerText = s.total ? Math.round((s.pos/s.total)*100) + '%' : '0%';
+        document.getElementById('m-neg').innerText = s.total ? Math.round((s.neg/s.total)*100) + '%' : '0%';
+        document.getElementById('m-shield').innerText = s.shield;
+
+        f.innerHTML = '';
+        if(APP_STATE.data.length === 0) {
+             f.innerHTML = '<div style="text-align: center; color: var(--text-light); padding: 40px;">No reviews.</div>';
+        } else {
+            APP_STATE.data.forEach((item, idx) => {
+                let cls = item.sentiment === 'Positive' ? 'card-pos' : (item.sentiment === 'Negative' ? 'card-neg' : '');
+                if (item.shield) cls = 'card-shield';
+                else if (item.sarcasm) cls = 'card-sarcasm';
+
+                const card = document.createElement('div');
+                card.className = `review-card ${cls}`;
+                card.innerHTML = `
+                    <div style="min-width:0;">
+                        ${item.shield ? '<span class="tag" style="background:var(--danger); color:white;">SAFETY ALERT</span>' : ''}
+                        ${item.sarcasm ? '<span class="tag" style="background:var(--sarcasm); color:white;">SARCASM</span>' : ''}
+                        <div><span class="tag tag-pill">${item.category}</span></div>
+                        <p style="font-weight:600; margin: 8px 0; font-size: 0.95rem;">"${item.raw}"</p>
+                        <small style="color:var(--text-light);">${item.trans}</small>
+                        <div class="bot-response"><strong>Strategy:</strong> ${item.action}</div>
+                    </div>
+                    <button onclick="io.del(${idx})" style="background:none; border:none; font-size:1.5rem; color:var(--text-light); padding:0 0 0 10px;">&times;</button>
+                `;
+                f.appendChild(card);
+            });
+        }
+        charts.update(s);
+    }
+};
+
+const io = {
+    del: (i) => { APP_STATE.data.splice(i, 1); network.save(); },
+    exportExcel: () => {
+        if(APP_STATE.data.length === 0) return ui.showToast("No data.");
+        let csv = "ID,Review,Translation,Category,Sentiment,Action,Shield\n";
+        APP_STATE.data.forEach(d => {
+            csv += `${d.id},"${d.raw.replace(/"/g, '""')}","${d.trans}",${d.category},${d.sentiment},"${d.action}",${d.shield}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Data_${APP_STATE.serverID}.csv`;
+        a.click();
+    }
+};
+
+const charts = {
+    pie: null, bar: null,
+    update: (s) => {
+        const ctxP = document.getElementById('pieChart');
+        const ctxB = document.getElementById('barChart');
+        if(!ctxP || !ctxB) return;
+
+        if (charts.pie) charts.pie.destroy();
+        if (charts.bar) charts.bar.destroy();
+
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        const txtColor = isDark ? '#94a3b8' : '#64748b';
+        
+        const opts = { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { display: false } } 
+        };
+
+        charts.pie = new Chart(ctxP, {
+            type: 'doughnut',
+            data: {
+                labels: ['Qual', 'Skin', 'Log', 'Eff'],
+                datasets: [{ data: s.catCounts, backgroundColor: ['#db2777', '#f59e0b', '#64748b', '#10b981'], borderWidth: 0 }]
+            },
+            options: { ...opts, plugins: { title: { display: true, text: 'Categories', color: txtColor } } }
+        });
+
+        charts.bar = new Chart(ctxB, {
+            type: 'bar',
+            data: {
+                labels: ['Pos', 'Neg', 'Risk'],
+                datasets: [{ data: [s.pos, s.neg, s.shield], backgroundColor: ['#10b981', '#ef4444', '#8b5cf6'], borderRadius: 4 }]
+            },
+            options: { ...opts, indexAxis: 'y', scales: { x: { display: false }, y: { ticks: { color: txtColor }, grid: { display: false } } } }
+        });
+    }
+};
+
+window.onload = ui.init;
+</script>
+</body>
+</html>
